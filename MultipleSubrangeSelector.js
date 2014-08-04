@@ -179,14 +179,6 @@ function loadMultipleSubrangeSelector() {
 				d.atOffset = convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left);
 				d.transform = transform;
 				
-//				console.log("MultipleSubrangeSelector::moveRange working on: " 
-//								+ d.id + " applying " + transform + "\n rangeId: " 
-//								+ range.attr("id") + ", which is positioned at: [" 
-//								+ d.x + ", " + d.y + "]\nMouse at ["
-//								+ event.x + ", " + event.y + "], \nwhich is at: " 
-//								+ convertCoordinatesToSeriesOffset((d.x - layoutConfiguration.margins.left)) 
-//								+ " offset.");
-				
 				range.attr("transform", transform);
 				
 				d.x = x;
@@ -197,11 +189,6 @@ function loadMultipleSubrangeSelector() {
 			};
 						
 			var fixToolTipMessage = function(d) {
-				
-//				console.log("MultipleSubrangeSelector::fixToolTipMessage called converted Series Offset: " 
-//								+ convertCoordinatesToSeriesOffset(d.x - layoutConfiguration.margins.left) 
-//								+ ", Move Calculated Series Offset: "
-//								+ d.atOffset);
 				
 				toolTip.select(convertIdToIdSelector("rangeToolTip")).text(d.id);
 				
@@ -306,12 +293,6 @@ function loadMultipleSubrangeSelector() {
 				var updatedWidth = timeSeriesScale(formWidth);
 				var updatedX = timeSeriesScale(formX);
 				
-//				console.log("MultipleSubrangeSelector::updateRangeClicked updatedWidth current: "
-//						+ updatedWidth + " alternative conversion: " + convertSeriesOffsetToCoordinate(formWidth));
-//		
-//				console.log("MultipleSubrangeSelector::updateRangeClicked updatedX current: "
-//						+ updatedX + " alternative conversion: " + convertSeriesOffsetToCoordinate(formX));
-		
 				if (layoutConfiguration.updateMenu.valueFormatter(x, layoutConfiguration.updateMenu.formatPrecision) 
 						!= layoutConfiguration.updateMenu.valueFormatter(updatedX, layoutConfiguration.updateMenu.formatPrecision)) {
 					
