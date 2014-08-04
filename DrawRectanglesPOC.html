@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Multiple Rectangles in a Range</title>
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+		
+		<style type="text/css">
+		
+				.axis path,
+				.axis line {
+				  fill: none;
+				  stroke: #000;
+				  stroke-width: 3;
+				  shape-rendering: crispEdges;
+				}
+				
+				
+				div.tooltip {
+					position: absolute;
+					text-align: center;
+					padding: 2px;
+					font: 12px sans-serif;
+					background: lightsteelblue;
+					border: 0px;
+					border-radius: 8px;
+					pointer-events: none;
+				}
+				
+				div.updater {
+					position: absolute;
+					text-align: Left;
+					padding: 2px;
+					font: 12px sans-serif;
+					background: darkgray;
+					border: 1px;
+					border-radius: 8px;
+				}
+				
+				div.eventeditor {
+					position: absolute;
+					text-align: Left;
+					padding: 2px;
+					font: 12px sans-serif;
+					background: cyan;
+					border: 1px;
+					border-radius: 8px;
+				}
+				
+				
+				
+		</style>
+	
+	</head>
+	<body>
+		<div id="testContainer" 
+			style="padding: 2px; margin: 2px; opacity: 0.75; "></div>
+		<script type="text/javascript" src="Utilities.js" defer="defer" ></script>
+		<script type="text/javascript" src="MultipleSubrangeSelector.js" defer="defer" ></script>
+		
+		<script type="text/javascript" >
+		
+		var subrangeMoved = function(data) {
+		
+			console.log("User moved range: " + data.id);
+			
+			return;
+		};
+		
+		var subrangeCreated = function(rangeId, data) {
+			
+			console.log("User created new subrange: " + data.id);
+			
+			data.onPositionUpdated.addHandler(subrangeMoved);
+			
+			return;
+		};
+		
+		var subrangeDeleted = function(data) {
+			
+			console.log("User deleted subrange: " + data.id);
+			
+			return;
+		}
+		
+		var seriesEventCreated = function (data) {
+			
+			console.log("User Created Series Event Marker: " + data.atOffset + ": " + data.eventLabel);
+			
+			return;
+		};
+		
+		var mouseMovement = function() {
+			
+			if (d3.event & d3.mouse(this)) {
+				
+				console.log("Mouse is moving over: " 
+						+ this.id 
+						+ " at [" 
+						+ d3.mouse(this)[0] 
+						+ ", " 
+						+ d3.mouse(this)[1] 
+						+ "]");
+				
+			} else {
+				
+			}
+			
+			return;
+		};
+
+		
+			console.log("DrawRectangles embedded javascript started.");
+		
+			// Use Load instead of ready to make sure the javascript files have been fully loaded
+			$(document).ready( function dialogSetup() {
+					
+					console.log("JQuery>Document:ready handler called...");
+					
+					d3.select("body").on("mousemove", mouseMovement);
+
+ 					// Explicitly Load the Modules
+ 					loadUtilitiesModule();
+					loadMultipleSubrangeSelector();
+
+					var GoControls = window.controls;
+					var mssc = GoControls.MultipleSubrangeSelector;
+					
+					var layoutConfiguration = {
+												containerPosition: { 
+													top: 0,
+													left: 0
+													},
+												width: 800,
+												height: 70,
+												margins: {
+														top: 20,
+														right: 280,
+														bottom: 40,
+														left: 40
+													},
+												eventMenu: {
+														inDuration: 200,
+														outDuration: 50,
+														width: 230,
+														formatPrecision: 2,
+														backgroundColor: "cyan",
+														dataDisplayColor: "yellow"
+												},
+												updateMenu: {
+														inDuration: 200,
+														outDuration: 50,
+														width: 230,
+														formatPrecision: 2,
+														backgroundColor: "darkgray",
+														valueFormatter: function (value, precision) { 
+																return Number(value).toFixed(precision); 
+															}
+													},
+												toolTip: {
+													inDuration: 250,
+													outDuration: 5,
+													valueFormatter: function (value, precision) { 
+															return Number(value).toFixed(precision); 
+														},
+													formatPrecision: 2,
+													inOpacity: 0.9,
+													outOpacity: 0
+													},
+												rangeBrush: {
+													width: 25,
+													height: 100,
+													rangeColor: 'blue',
+													activeResizeHandleColor: 'pink',
+													rangeOpacity: 0.2,
+													activeResizeOpacity: 1,
+													minimumRangeWidth: 5,
+													resizeHandleWidth: 3
+													},
+													axisLabels: {
+														height: 40,
+														angle: 25,
+														dx: "0.3em",
+														dy: "0.3em",
+														anchor: "start"
+														},
+													eventLabels: {
+														height: 70,
+														angle: 25,
+														dx: "0.3em",
+														dy: "0.3em",
+														anchor: "middle",
+														strokeColor: "red",
+														strokeWidth: "2px",
+														xOffset: 30,
+														yOffset: 20
+														}
+												};
+					
+					var control = new mssc("#testContainer", [0,100], layoutConfiguration);
+
+					control.AddOnNewSubrangeCreatedHandler(subrangeCreated);
+					control.AddDeletedSubrangeHandler(subrangeDeleted);
+					control.AddNewSeriesEventCreatedHandler(seriesEventCreated);
+					
+		            return;
+		 		});
+			
+			console.log("DrawRectangles embedded javascript executed.");
+
+		</script>
+	</body>
+</html>
