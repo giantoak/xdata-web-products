@@ -154,7 +154,138 @@ function loadUtilitiesModule() {
 				return;
 			};
 			
+			
+			var mapColors = function mapColorsFactory(colors, scalingFunction, dataSet, accessor) {
+				
+				var mapperSteps = (1.0 / (colors.length - 1));
+				var mapperDomain = d3.range(0, 1, mapperSteps);
+				
+				var mapper = d3.scale.linear().domain(mapperDomain)
+									.range(colors);
+				
+				var localExtent = d3.extent(dataSet, accessor);
+				var localRange = new Array(0,1);
+				var scaler = scalingFunction.domain(localExtent).range(localRange);
+				
+				return function colorMapper(value) { 
+					
+						var s = scaler(value);
+						
+						var m = mapper(s);
+					
+						return m;
+					};
+				
+			};
+			
+			var argumentChecker = function argumentChecker(arg, defaultValue) {
+				
+				return ((typeof arg === "undefined") ? defaultValue : arg);
+			};
+			
+			var fetchJumpTable = {
+					"txt": {
+								fetch: function textFetch(url, callback, mime, accessor) { 
+										
+											d3.text(url, mime, callback);
+											return;
+										},
+								mimeTypeDefault: "text/plain",
+								accessorDefault: function (d) { return d;}
+							},
+					"json": {
+								fetch: function jsonFetch(url, callback, mime, accessor) { 
 									
+										d3.json(url, callback);
+										return;
+									},
+								mimeTypeDefault: "application/json",
+								accessorDefault: function (d) { return d; }
+							}, 
+					"xml": {
+								fetch: function xmlFetch(url, callback, mime, accessor) {
+									
+									d3.xml(url, mime, callback);
+									return;
+								},
+								mimeTypeDefault: "application/xml",
+								accessorDefault: function (d) { return d; }
+							}, 
+					"html": {
+								fetch: function htmlFetch(url, callback, mime, accessor) {
+									
+									d3.html(url, callback);
+									return;
+								},
+								mimeTypeDefault: "text/html",
+								accessorDefault: function (d) { return d; }
+							}, 								
+					"csv": {
+								fetch: function csvFetch(url, callback, mime, accessor) { 
+									
+									d3.csv(url, accessor, callback);
+									return;
+								},
+								mimeTypeDefault: "text/csv",
+								accessorDefault: function (d) { return d; } 
+							}, 								
+					"tsv": {
+								fetch: function tsvFetch(url, callback, mime, accessor) { 
+									
+									d3.tsv(url, accessor, callback);
+									return;
+								},
+								mimeTypeDefault: "text/tab-separated-values",
+								accessorDefault: function (d) { return d; }
+							}
+			};
+			
+			var fetchData = function fetchData(uri, callback, mime, accessor) {
+				
+				var offset = uri.lastIndexOf(".");
+				
+				if (-1 != offset) {
+
+					++offset;
+					var extension = uri.slice(offset);
+					var fetcher = fetchJumpTable[extension]; 
+					
+					fetcher.fetch(uri, callback, 
+									argumentChecker(mime, fetcher.mimeTypeDefault),
+									argumentChecker(accessor, fetcher.accessorDefault));
+					
+				} else {
+					throw new Error("URL does not include expected extension.");
+				}
+				return;
+			};
+			
+			var findIndexByKeyValue = function findIndexByKeyValue(obj, key, value){
+	                for (var i = 0; i < obj.length; i++) {
+	                    if (obj[i][key] == value) {
+	                        return i;
+	                    }
+	                }
+	                return null;
+	            };
+	
+
+	        var generateComponentSpecificIdentifiers = function generateComponentSpecificIdentifiers(prefix, identifier) {
+	        	
+	        	return prefix + "_" + identifier;
+	        };
+	        
+	        var generateClassSelector = function generateClassSelector (identifier) {
+	        	
+	        	return "." + identifer;
+	        };
+	        
+	        var generateIdentifierSelector = function generateIdentifierSelector(identifier) {
+	        	
+	        	return "#" + identifier;
+	        };
+
+			
 			/******************************************************************************
 			 * 
 			 * TODO: 
@@ -262,7 +393,11 @@ function loadUtilitiesModule() {
 										
 									} catch (e) {
 										
-										console.log("EventHandlerManagement caught exception thrown by user assigned event handler: " + handler.name ); 
+										console.log("EventHandlerManagement caught exception thrown by : " 
+														+ handler.name 
+														+ ", Message was: '"
+														+ e.message 
+														+ "'"); 
 									}
 									
 									
@@ -286,7 +421,14 @@ function loadUtilitiesModule() {
 							EventHandlerManagement: EventHandlerManagement
 						},
 						IsExternalLibraryLoaded: isExternalLibraryLoaded,
-						IsModuleLoaded: isModuleLoaded						
+						IsModuleLoaded: isModuleLoaded,
+						MapColors: mapColors,
+						FetchData: fetchData,
+						FindIndexByKeyValue: findIndexByKeyValue,
+						GenerateComponentSpecificIdentifiers: generateComponentSpecificIdentifiers,
+						GenerateClassSelector: generateClassSelector,
+						GenerateIdentifierSelector: generateIdentifierSelector
+
 				};
 		}());
 		

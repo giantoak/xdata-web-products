@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Advance ComboBox Proof-of-ConceptPage</title>
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="./RangeGradients.css" />		
+		<style type="text/css" id="gradients">
+		
+			.gradient1 {
+ 				max-height: 100%;
+				background: -webkit-linear-gradient(left, white, red, blue, green, black);
+				background: -o-linear-gradient(left, white, red, blue, green, black);
+				background: -moz-linear-gradient(left, white, red, blue, green, black);
+				background: linear-gradient(to left, white, red, blue, green, black);
+			}
+
+		</style>
+		
+		<script type="text/javascript">
+		
+			var dropDownShowing = false;
+			var selectionId = "selection-default";
+		
+			var ShowDropDown = function () {
+				
+				console.log("AdvancedComboBoxPOC::ShowDropDown called...");
+				
+				var options = $("[id^=selection-]");
+				
+				options.removeClass("highlight");
+				options.addClass("outlined");
+				
+				options.css("display", (dropDownShowing ? "none" : "block"));
+				
+				dropDownShowing = !dropDownShowing;
+				
+				if (!dropDownShowing) {
+				
+					$("#" + selectionId).css("display", "block")
+											.css("top", "0px")
+											.addClass("selected")
+											.removeClass("outlined");
+				
+					options = $(".outlined");
+					
+					options.each(function (i, element) {
+						
+						var top = ((i + 1) * 30);
+						
+						console.log("repositioning element[" + i + "] id: " + element.id + " top: " +  top);
+						
+						$(element).css("top", (top + "px"));
+					});
+				
+				}
+				console.log("AdvancedComboBoxPOC::ShowDropDown completed.");
+				
+				return;
+			};
+			
+			var HighlightOption = function (ctr) {
+				
+				var opt = $(ctr);
+				
+				console.log("AdvancedComboBoxPOC::HighlightOption called, while over: " + ctr.id);
+
+				var options = $(".highlight");
+				
+				options.toggleClass("highlight outlined");
+				
+				opt.toggleClass("outlined highlight");
+				
+				console.log("AdvancedComboBoxPOC::HighlightOption completed.");
+				
+			};
+			
+			var SelectedOption = function (ctr) {
+				
+				var opt = $(ctr);
+				
+				console.log("AdvancedComboboxPOC::SelectedOption called, while over: " + ctr.id);
+				
+				var options = $(".selected");
+				
+				options.toggleClass("selected outlined");
+				 
+				opt.toggleClass("highlight selected");
+				
+				selectionId = ctr.id;
+				
+				ShowDropDown();
+				
+				console.log("AdvancedComboBoxPOC::SelectedOption completed.");
+				
+			};
+			
+		</script>
+
+	</head>
+<body>
+
+<div style="width: 50%; height: 200px; position: absolute; top: 10px; left: 10px;" >
+	<div class="options selected" 
+			id="selection-default" 
+			style="position: absolute; top: 0px; left: 0px; width: 300px; " 
+			onmouseover="HighlightOption(this);" 
+			onclick="SelectedOption(this);">&lt;Select Metrics&gt;
+			<div class="gradientSampler" 
+						style="position: absolute; top: 0px; left: 200px; "></div>
+	</div>
+	<div class="options outlined" 
+			id="selection-betweenness" 
+			style="position: absolute; top: 35px; left: 0px; " 
+			onmouseover="HighlightOption(this);" 
+			onclick="SelectedOption(this);">
+				Betweenness
+				<div class="betweennessGradient gradientSampler" 
+						style="position: absolute; top: 0px; left: 200px; "></div>
+	</div>
+	<div class="options outlined" 
+			id="selection-eigCen" 
+			style="position: absolute; top: 70px; left: 0px; " 
+			onmouseover="HighlightOption(this);" 
+			onclick="SelectedOption(this);">
+				Eigen Centrality
+				<div class="eigCenGradient gradientSampler" 
+						style="position: absolute; top: 0px; left: 200px; "></div>
+	</div>
+	<div class="options outlined" 
+			id="selection-degree" 
+			style="position: absolute; top: 105px; left: 0px; " 
+			onmouseover="HighlightOption(this);" 
+			onclick="SelectedOption(this);">
+				Degrees
+				<div class="degreeGradient  gradientSampler" 
+					style="position: absolute; top: 0px; left: 200px; "></div>
+	</div>				
+	<div onclick="ShowDropDown();" 
+			style="border: 1px solid darkgray; padding: 5px; position: absolute; top: 0px; left: 300px; ">V</div>
+</div>
+</body>
+</html>

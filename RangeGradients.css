@@ -1,0 +1,49 @@
+@CHARSET "UTF-8";
+.betweennessGradient {
+	background: -webkit-linear-gradient(left, red, white, blue, black, green);
+	background: -o-linear-gradient(left, red, white, blue, black, green);
+	background: -moz-linear-gradient(left, red, white, blue, black, green);
+	background: linear-gradient(to left, red, white, blue, black, green);								
+}
+
+.eigCenGradient {
+	background: -webkit-linear-gradient(left, blue, white, green, black, red);
+	background: -o-linear-gradient(left, blue, white, green, black, red);
+	background: -moz-linear-gradient(left, blue, white, green, black, red);
+	background: linear-gradient(to left, blue, white, green, black, red);
+}
+
+.degreeGradient {
+	background: -webkit-linear-gradient(left, green, white, black, blue, red);
+	background: -o-linear-gradient(left, green, white, black, blue, red);
+	background: -moz-linear-gradient(left, green, white, black, blue, red);
+	background: linear-gradient(to left, green, white, black, blue, red);
+}
+
+.gradientSampler {			
+	height: 100%;
+	width: 100px;
+}
+
+.options {
+	width: 300px;
+	height: 30px;
+	display: none;
+	text-align: left;
+	vertical-align: middle;
+}
+
+.highlight {
+	border: 1px solid red;
+}
+
+.outlined {
+	border: 1px solid darkgray;
+}
+
+.selected {
+	display: block;
+	border: 1px solid black;
+}
+			
+			

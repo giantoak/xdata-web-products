@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Proof of Concept Test Page for Temporal Node Graph Component</title>
+		
+	    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+	    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+	    
+	    <link rel="stylesheet" type="text/css" href="./RangeGradients.css" />
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+		
+		<style type="text/css">
+			
+			.link {
+				stroke: #000;
+				stroke-width: 2px;
+			}
+			
+			circle.node {
+				cursor: move;
+				stroke-width: 2px;
+			}
+			
+			.temporalNodeGraphDataDisplay {
+				text-align: center;
+				padding: 2px;
+				font: 12px sans-serif;
+				background: lightsteelblue;
+				border: 0px;
+				border-radius: 8px;
+				pointer-events: none;
+				display: none;
+				opacity: 0.75;
+			}
+
+		</style>
+		
+		<style type="text/css" id="gradients">
+		
+			.gradient1 {
+ 				max-height: 100%;
+				background: -webkit-linear-gradient(left, white, red, blue, green, black);
+				background: -o-linear-gradient(left, white, red, blue, green, black);
+				background: -moz-linear-gradient(left, white, red, blue, green, black);
+				background: linear-gradient(to left, white, red, blue, green, black);
+			}
+			
+		</style>
+	</head>
+	<body>
+		<div id="testContainer" style="padding: 2px; margin: 2px; border: 1px solid black; background-color: beige; "></div>
+		
+		<script type="text/javascript" src="Utilities.js" defer="defer"></script>
+		<script type="text/javascript" src="ComplexDropDown.js" defer="defer"></script>
+		<script type="text/javascript" src="TemporalNodeGraph.js" defer="defer"></script>
+		<script type="text/javascript">
+		
+			$(document).ready( function setupPage() {
+				
+				console.log("JQuery>Document::ready handler called...");
+				
+				var disposed = {
+						nodes: new Array(),
+						links: new Object()
+				}
+				
+				function findAllLinksInDataSet(nodeId) {
+					
+					var removedLinks = new Array();
+					
+					for (var i = 0; i < dataSet.links.length; i++) {
+						
+						var source = dataSet.links[i].source;
+						var target = dataSet.links[i].target;
+						
+						if ((source.id == nodeId)
+								|| (target.id == nodeId)) {
+						
+							removedLinks.push(i);
+						}						
+					}
+					
+					disposed.links[""+nodeId] = new Array();
+					
+					removedLinks.forEach(function (element) {
+						
+						var link = dataSet.links[element];
+						var retainedLinks = disposed.links[nodeId];
+						
+						retainedLinks.push(link);
+						
+						return;						
+					});
+					
+					disposed.links[nodeId].forEach(function(element) {
+						
+						var index = dataSet.links.indexOf(element);
+						
+						if (-1 != index) {
+						
+							dataSet.links.splice(index, 1);
+						}
+						
+						return;
+					});
+					
+				}
+				
+				function removeNode() {
+
+					var index = Math.floor(Math.random() * dataSet.nodes.length);
+					
+					disposed.nodes.push(dataSet.nodes[index]);
+					
+					findAllLinksInDataSet(dataSet.nodes[index].id);		
+					
+					dataSet.nodes.splice(index, 1);
+
+					return;
+				}
+				
+				function modifyNetwork() {
+					
+					if (disposed.nodes.length) {
+						
+						var action = Math.floor(Math.random() * dataSet.nodes.length);
+						
+						if (0 == (action %2)) {
+							
+							
+							// Add back in node
+							var selectionIndex = Math.floor(Math.random() * disposed.nodes.length);
+							var element = disposed.nodes[selectionIndex];
+							var insertAt = Math.floor(Math.random() * (dataSet.nodes.length + 1));
+							
+							if (insertAt == dataSet.nodes.length) {
+								
+								dataSet.nodes.push(element);
+							} else {
+								
+								dataSet.nodes.splice(insertAt, 0, element);
+							}
+							
+							var restoredLinks = disposed.links[""+element.id];
+							
+							if (resortedLinks) {
+								
+								restoredLinks.forEach(function(element) {
+									
+									dataSet.links.push(element);
+								});
+								
+							}
+							
+							disposed.nodes.slice(selectionIndex, 1);
+							disposed.links[""+element.id] = null;
+							
+							console.log("TemporalNodeGraphPOC::modifyNetwork adding node " + element.id + " back into graph at: " + insertAt);
+							
+						} else {
+							
+							console.log("TemporalNodeGraphPOC::modifyNetwork removing node from graph");
+							// Remove another node							
+							removeNode();
+						}
+						
+					} else {
+						
+						removeNode();
+					}
+					
+					return;
+				}
+				
+				var GoUtilities = window.utilities;
+				var GoControls = window.controls;
+				var tng = GoControls.TemporalNodeGraph;
+				
+				var layoutConfiguration = {
+											containerProperties: {
+													top: 0,
+													left: 0,
+													width: 500,
+													height: 500,
+													borders: "1px solid black",
+													backgroundColor: "white",
+													padding: 5,
+													margin: 5
+												},
+											titleProperties: {
+												labelPrefix: "Week: "
+											},
+											margins: {
+													top: 20,
+													left: 20,
+													right: 20,
+													bottom: 20,
+													horizontalMargins: 40,
+													verticalMargins: 40
+												},
+											graphProperties: {
+													transitionTiming: 1500,
+													charge: -400,
+													linkDistance: 40,
+													nodeRadius: 18,
+													fixedColor: "lightgray",
+													baseNodeColor: "white",
+													betweennessRange: ["red", "white", "blue", "black", "green"],
+													eigCenRange: ["blue", "white", "green", "black", "red"],
+													degreeRange: ["green", "white", "black", "blue", "red"],
+													betweennessScalingFunction: d3.scale.linear(),
+													eigCenScalingFunction: d3.scale.pow().exponent(4),
+													degreeScalingFunction: d3.scale.linear()
+												},
+											scrubberProperties: {
+												width: 24,
+												height: 20,
+												padding: 2,
+												margin: 2,
+												borders: "1px solid black",
+												backgroundColor: "mintcream",
+												backBackgroundColor: "hotpink",
+												backBorders: "2px solid maroon",
+												forwardBackgroundColor: "powderblue",
+												forwardBorders: "2px solid darkblue"
+											}
+										};
+				
+				var control = new tng("TNG", "#testContainer", layoutConfiguration);
+				
+				for (var prop in control) {
+					
+					console.log("control." + prop);
+				}
+
+				for (var prop in control.prototype) {
+					
+					console.log("control.prototype." + prop);
+				}
+
+				control.AdditionalNodeDataURL = "employees_id.csv";
+				
+				console.log("Echoed Node Data URL: '" + control.AdditionalNodeDataURL + "'");
+				
+				var periodLabel = 140;
+				
+				control.PeriodLabel = "" + periodLabel;
+				
+				console.log("Echoed Period Label: '" + control.PeriodLabel + "'");
+				
+				control.AdditionalNodeDataMapper = function (error, data) {
+					
+					if (error) {
+						throw error;
+					}
+					
+					var counter = 0;
+					
+					data.forEach(function (element, i) {
+						
+						var index = GoUtilities.FindIndexByKeyValue(control.LoadedData.nodes, "id", element.id);
+						
+// 						console.log("Call " + i + " to findIndexByKeyValue returned: " + index 
+// 										+ ", nodes.length = " + control.LoadedData.nodes.length);
+						
+						if (index) {
+							
+							control.LoadedData.nodes[index].name = element.name;
+						} else {
+							
+							/***************************************
+							 * TODO: Remove Testing assignment 
+							 */
+							if (counter < control.LoadedData.nodes.length) {
+							
+								control.LoadedData.nodes[counter].name = "unknown usp:" + counter++;
+							}
+						}
+						
+						return;
+					});
+					
+					return;
+				};
+				
+				control.AddStepBackEventHandler(function (id) {
+					
+					console.log("TemporalNodeGraphPOC::Step Backwards Event Handler called with: '" + id + "''");
+					
+					--periodLabel;
+					
+					control.PeriodLabel = "" + periodLabel;
+					
+					console.log("TemporalNodeGraphPOC::Step Forwards Event Handler before moving: '" 
+							+ dataSet.nodes[0].x + "', '"
+							+ dataSet.nodes[0].y + "'");
+			
+					dataSet.nodes[0].x += 100;
+					dataSet.nodes[0].y += 100;
+					
+					console.log("TemporalNodeGraphPOC::Step Forwards Event Handler after moving: '" 
+							+ dataSet.nodes[0].x + "', '"
+							+ dataSet.nodes[0].y + "'");
+					
+					modifyNetwork();
+			
+					control.UpdateDataSet(dataSet);
+					return;
+				});
+							
+				control.AddStepForwardEventHandler(function (id) {
+					
+					console.log("TemporalNodeGraphPOC::Step Forwards Event Handler called with: '" + id + "'");
+					
+					++periodLabel;
+					
+					control.PeriodLabel = "" + periodLabel;
+					
+					console.log("TemporalNodeGraphPOC::Step Forwards Event Handler before moving: '" 
+									+ dataSet.nodes[0].x + "', '"
+									+ dataSet.nodes[0].y + "'");
+					
+					dataSet.nodes[0].x -= 100;
+					dataSet.nodes[0].y -= 100;
+					
+					console.log("TemporalNodeGraphPOC::Step Forwards Event Handler after moving: '" 
+							+ dataSet.nodes[0].x + "', '"
+							+ dataSet.nodes[0].y + "'");
+			
+					modifyNetwork();
+					
+					control.UpdateDataSet(dataSet);
+					return;					
+				});
+				
+				control.AddLinkToolTipActivatedEventHandler(function hoverOverLink(ctr, display, data) {
+					
+					console.log("TemporalNodeGraphPOC::AddLinkToolTipActivatedEventHandler called: " + data);
+					
+					display.style("display", "block")
+							.style("width", "150px")
+							.style("height", "100px")
+							.html("<strong>" + data.source.name + "</strong> to <strong>" + data.target.name + "</strong>");
+				});
+
+				control.AddLinkToolTipDeactivatedEventHandler(function leaveLink(ctr, display, data) {
+					
+					console.log("TemporalNodeGraphPOC::AddLinkToolTipDeactivatedEventHandler called: " + data);
+					
+					display.style("display", "none");
+				});
+
+				control.AddNodeToolTipActivatedEventHandler(function hoverOverNode(ctr, display, data) {
+					
+					console.log("TemporalNodeGraphPOC::AddNodeToolTipActivatedEventHandler called: " + data);
+
+					display.style("display", "block")
+						.style("width", "150px")
+						.style("height", "100px")
+						.html("Name: <strong>" + data.name + "</strong><br>ID: <strong>" + data.id + "</strong>");
+				});
+
+				control.AddNodeToolTipDeactivatedEventHandler(function leaveNode(ctr, display, data) {
+					
+					console.log("TemporalNodeGraphPOC::AddNodeToolTipDeactivatedEventHandler called: " + data);
+					
+					display.style("display", "none");
+				});
+
+				
+				var dataSet = {
+						  "nodes": [
+						            {
+						            	"x": 469, 
+						            	"y": 410, 
+						            	"fill": "red", 
+						            	"stroke": "red", 
+						            	"betweenness":0.14985014985014986, 
+						            	"eigcen":0.11661187479787286, 
+						            	"id":129, 
+						            	"degree":2
+						            },
+						            {
+						            	"x": 493, 
+						            	"y": 364, 
+						            	"fill": "blue", 
+						            	"stroke": "hotpink",
+						                "betweenness":0.000333000333000333,
+						                "eigcen":2.5454898170262802e-23,
+						                "id":130,
+						                "degree":2
+						            },
+						            {
+						            	"x": 442, 
+						            	"y": 365, 
+						            	"fill": "hotpink", 
+						            	"stroke": "hotpink", 
+						                "betweenness":0.0,
+						                "eigcen":1.4497779457328024e-21,
+						                "id":132,
+						                "degree":1
+						            },
+						            {
+						            	"x": 467, 
+						            	"y": 314, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.0,
+						                "eigcen":0.113302655741969,
+						                "id":133,
+						                "degree":1
+						            },
+						            {
+						            	"x": 477, 
+						            	"y": 248, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.000666000666000666,
+						                "eigcen":2.345789992335678e-21,
+						                "id":134,
+						                "degree":2
+						            },
+						            {
+						            	"x": 425, 
+						            	"y": 207, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.0,
+						                "eigcen":0.02541521362285489,
+						                "id":136,
+						                "degree":1
+						            },
+						            {
+						            	"x": 402, 
+						            	"y": 155, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.06282606282606276,
+						                "eigcen":0.001122564912854533,
+						                "id":9,
+						                "degree":8
+						            },
+						            {
+						            	"x": 369, 
+						            	"y": 196, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.0,
+						                "eigcen":0.03699215403978054,
+						                "id":23,
+						                "degree":1
+						            },
+						            {
+						            	"x": 350, 
+						            	"y": 148, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.0,
+						                "eigcen":0.113302655741969,
+						                "id":140,
+						                "degree":1
+						            },
+						            {
+						            	"x": 539, 
+						            	"y": 222, 
+						            	"fill": "black", 
+						            	"stroke": "black", 
+						                "betweenness":0.12204462204462205,
+						                "eigcen":0.003757453543078199,
+						                "id":13,
+						                "degree":4
+						            },
+						            {
+						            	"x": 594, 
+						            	"y": 235, 
+						            	"fill": "hotpink", 
+						            	"stroke": "lightblue", 
+						                "betweenness":0.0,
+						                "eigcen":0.01931796851250721,
+						                "id":16,
+						                "degree":1
+						            },
+						            {
+						            	"x": 582, 
+						            	"y": 185, 
+						            	"fill": "lightblue", 
+						            	"stroke": "lightblue", 
+						                "betweenness":0.0,
+						                "eigcen":0.113302655741969,
+						                "id":145,
+						                "degree":1
+						            },
+						            {
+						            	"x": 633, 
+						            	"y": 200, 
+						            	"fill": "blue", 
+						            	"stroke": "blue", 
+						                "betweenness":0.0,
+						                "eigcen":0.14302656197515992,
+						                "id":146,
+						                "degree":2
+						        	}
+						          ],
+						          "links": [
+						            {"source":  0, "target":  1},
+						            {"source":  1, "target":  2},
+						            {"source":  2, "target":  0},
+						            {"source":  1, "target":  3},
+						            {"source":  3, "target":  2},
+						            {"source":  3, "target":  4},
+						            {"source":  4, "target":  5},
+						            {"source":  5, "target":  6},
+						            {"source":  5, "target":  7},
+						            {"source":  6, "target":  7},
+						            {"source":  6, "target":  8},
+						            {"source":  7, "target":  8},
+						            {"source":  9, "target":  4},
+						            {"source":  9, "target": 11},
+						            {"source":  9, "target": 10},
+						            {"source": 10, "target": 11},
+						            {"source": 11, "target": 12},
+						            {"source": 12, "target": 10}
+						          ]
+						        };
+				
+				control.UpdateDataSet(dataSet);
+				
+				console.log("JQuery>Document::ready handler completed.");
+				return;
+			});
+		</script>
+	</body>
+</html>
