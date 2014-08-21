@@ -75,6 +75,7 @@ function loadMultipleSubrangeSelector() {
 			var svg = null;
 			var elementWidth = 850;
 			var elementHeight = 135; 
+			var prefix = null;
 			
 			
 			var subrangeCreationEventManagement = new GoControls.EventHandlerManagement();
@@ -98,7 +99,8 @@ function loadMultipleSubrangeSelector() {
 			 * Define functions that will be bound to the class thereby becoming publicly scoped. 
 			**************************************************************************************/
 			
-			function convertIdToIdSelector(id) { return "#" + id; }
+			function convertIdToIdSelector(id) { return  GoUtilities.GenerateIdentifierSelector(
+															GoUtilities.GenerateComponentSpecificIdentifiers(prefix, id)); }
 
 			function convertCoordinatesToSeriesOffset(coord) {
 				
@@ -139,7 +141,7 @@ function loadMultipleSubrangeSelector() {
 						"width": layoutConfiguration.rangeBrush.width,
 						"height": layoutConfiguration.rangeBrush.height,
 						"atOffset": convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left),
-						"id": ("rect_" + rectangles.length),
+						"id": GoUtilities.GenerateComponentSpecificIdentifiers(prefix, ("rect_" + rectangles.length)),
 						"onPositionUpdated": new GoControls.EventHandlerManagement() 
 					};
 				
@@ -155,7 +157,7 @@ function loadMultipleSubrangeSelector() {
 				console.log("MultipleSubrangeSelector::createNewEvent called...");
 				
 				var event = {
-						"id": ("evt_" + events.length),
+						"id": GoUtilities.GenerateComponentSpecificIdentifiers(prefix, ("evt_" + events.length)),
 						"x": x,
 						"atOffset": convertCoordinatesToSeriesOffset(x),
 						"eventLabel": "New User Event"
@@ -386,6 +388,7 @@ function loadMultipleSubrangeSelector() {
 						updateButton.datum(event);
 						
 						events.push(event);
+					} else {
 					}
 				}
 				
@@ -431,8 +434,8 @@ function loadMultipleSubrangeSelector() {
 				 *******************************************************************/
 				
 				// Translate SVG to accommodate newly displayed menu 
-				
-				var index = events.indexOf(deleteButton.datum());
+				var datum = deleteButton.datum();
+				var index = events.indexOf(datum);
 				
 				var deleted = null;
 				
@@ -455,7 +458,6 @@ function loadMultipleSubrangeSelector() {
 				if (deleted) {
 					
 					eventDeletedEventManagement.fireHandlers(deleted);
-
 				}
 				
 				return;
@@ -469,8 +471,7 @@ function loadMultipleSubrangeSelector() {
 						element.transition()
 									.duration(layoutConfiguration.updateMenu.outDuration)
 										.style("display", "none")
-										.style("opacity", 0)
-										.attr("x", (-1 * layoutConfiguration.updateMenu.width));
+										.style("opacity", 0);
 						
 						return;
 					});
@@ -480,18 +481,19 @@ function loadMultipleSubrangeSelector() {
 					open.transition()
 						.duration(layoutConfiguration.updateMenu.inDuration)
 							.style("display", "block")
-							.style("opacity", 1)
-							.attr("x", (layoutConfiguration.margins.left/4));
+							.style("opacity", 1);
+	
+//					.attr("x", (layoutConfiguration.margins.left/4))
 			
-					svg.attr("transform", "translate(" 
-							+ (layoutConfiguration.updateMenu.width + (layoutConfiguration.margins.left/4)) 
-							+ ", 0)");
-
+//					svg.attr("transform", "translate(" 
+//							+ (layoutConfiguration.updateMenu.width + (layoutConfiguration.margins.left/4)) 
+//							+ ", 0)");
+//
 				} else {
 					
-					svg.attr("transform", "translate(" 
-							+ (layoutConfiguration.margins.left/4) 
-							+ ", 0)");
+//					svg.attr("transform", "translate(" 
+//							+ (layoutConfiguration.margins.left/4) 
+//							+ ", 0)");
 				}
 				
 				return;
@@ -743,7 +745,7 @@ function loadMultipleSubrangeSelector() {
 										})
 									.attr("id", function (d) {
 												
-												return "eventMarkers_" + d.id;
+												return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "eventMarkers_" + d.id);
 											});
 				
 				events.forEach(function(element, index, array) {
@@ -890,7 +892,7 @@ function loadMultipleSubrangeSelector() {
 								.attr("class", "ranges")
 								.attr("id", function(d) {
 									
-										return "rangeSelections_" + d.id;
+										return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "rangeSelections_" + d.id);
 									})
 								.attr("transform", function (d) {
 									
@@ -924,7 +926,7 @@ function loadMultipleSubrangeSelector() {
 									.append("rect")
 										.attr("class", "wr")
 										.attr("id", function(d) { 
-												return "wr_" + d.id; 
+												return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "wr_" + d.id); 
 											})
 										.attr("x", function (d) { 
 												return 0; 
@@ -993,7 +995,7 @@ function loadMultipleSubrangeSelector() {
 														.append("rect")
 			    											.attr("class", "block")
 			    											.attr("id", function(d) { 
-			    													return "block_" + d.id; 
+			    													return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "block_" + d.id); 
 			    												})
 			    											.attr("x", function (d) { 
 			    													return 0; 
@@ -1052,7 +1054,7 @@ function loadMultipleSubrangeSelector() {
 														.append("rect")
 															.attr("class", "er")
 															.attr("id", function(d) { 
-																	return "er_" + d.id; 
+																	return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "er_" + d.id); 
 																})
 															.attr("x", function (d) { 
 																	return 0; 
@@ -1138,7 +1140,7 @@ function loadMultipleSubrangeSelector() {
 								.enter()
 									.append("th")
 										.attr("colspan", function(d) { return d.colspan; })
-										.attr("id", function(d) { return d.id; })
+										.attr("id", function(d) { return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id); })
 										.style("text-align", function (d) { return d.textAlign; });
 						
 				}
@@ -1201,7 +1203,7 @@ function loadMultipleSubrangeSelector() {
 															return results;
 													})
 											.enter().append("input")
-													.attr("id", function (d) { return d.id; })
+													.attr("id", function (d) { return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id); })
 													.attr("type", function (d) { return d.type; })
 													.attr("value", function (d) { 
 														var results = d.text;
@@ -1243,7 +1245,7 @@ function loadMultipleSubrangeSelector() {
 									.enter()
 										.append("th")
 											.attr("colspan", function(d) { return d.colspan; })
-											.attr("id", function(d) { return d.id; })
+											.attr("id", function(d) { return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id); })
 											.style("text-align", function (d) { return d.textAlign; });
 							
 					}
@@ -1306,7 +1308,7 @@ function loadMultipleSubrangeSelector() {
 																return results;
 														})
 												.enter().append("span")
-														.attr("id", function (d) { return d.id; })
+														.attr("id", function (d) { return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id); })
 														.text(function (d) { 
 																var results = d.text;
 																
@@ -1334,71 +1336,80 @@ function loadMultipleSubrangeSelector() {
 				var height = elementHeight/2;
 				var host = d3.select(containerId);
 				
-				var menuRollout = host.append("div").attr("id", "menurollout")
+				var menuRollout = host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+						 									"menurollout"))
 										.style("width", width + "px")
 										.style("height", elementHeight + "px")
 										.style("position", "absolute");
 				
-				menuRollout.append("div").attr("id", "eventMenuTrigger")
+				/**********************************************
+				 * TODO: Update left positioning info on both 'target' controls.
+				 */
+				menuRollout.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+														"eventMenuTrigger"))
 								.style("background-color", layoutConfiguration.eventMenu.backgroundColor)
 								.style("border", "1px solid black")
 								.style("position", "absolute")
 								.style("top", "0px")
-								.style("left", "0px")
+								.style("left", ((layoutConfiguration.margins.left * 1.25) 
+													+ layoutConfiguration.eventMenu.width) + "px")
 								.style("width", width + "px")
 								.style("height", height + "px")
 								.on("click", rollOutEventEditor);
 				
-				menuRollout.append("div").attr("id", "rangeMenuTrigger")
+				menuRollout.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+														"rangeMenuTrigger"))
 								.style("background-color", layoutConfiguration.updateMenu.backgroundColor)
 								.style("border", "1px solid black")
 								.style("position", "absolute")
 								.style("top", height + "px")
-								.style("left", "0px")
+								.style("left", ((layoutConfiguration.margins.left * 1.25) 
+													+ layoutConfiguration.eventMenu.width) + "px")
 								.style("width", width + "px")
 								.style("height", height + "px")
 								.on("click", rollOutRangeEditor);
 
-				host.append("div").attr("id", "updateForm")
+				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+													"updateForm"))
 								.attr("class", "updater")
 								.style("border", "1px black solid")
 								.style("background-color", layoutConfiguration.updateMenu.backgroundColor)
 								.style("position", "absolute")
 								.style("top", "0px")
 								.style("width", layoutConfiguration.updateMenu.width + "px")
-								.style("left", width + "px"); 
+								.style("left",  layoutConfiguration.margins.left + "px"); 
 				
-				host.append("div").attr("id", "eventForm")
+				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+														"eventForm"))
 								.attr("class", "eventeditor")
 								.style("border", "1px black solid")
 								.style("position", "absolute")
 								.style("background-color", layoutConfiguration.eventMenu.backgroundColor)
 								.style("top", "0px")
-								.style("width", layoutConfiguration.updateMenu.width + "px")
-								.style("left", width + "px"); 
+								.style("width", layoutConfiguration.eventMenu.width + "px")
+								.style("left",  layoutConfiguration.margins.left + "px"); 
 	
-				host.append("div").attr("id", "toolTip")
+				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+													"toolTip"))
 							.attr("class", "tooltip")
 							.style("border", "1px black solid")
 							.style("position", "absolute")
 							.style("top", "0px")
-							.style("width", "200px")
-							.style("left", width + "px"); 
+							.style("left", elementWidth + "px");
 				
-				host.append("div").attr("id", "eventLabel")
+				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+														"eventLabel"))
 							.attr("class", "tooltip")
 							.style("border", "1px black solid")
 							.style("position", "absolute")
-							.style("width", "200px")
+							.style("left", layoutConfiguration.eventMenu.width + "px")
 							.style("background-color", layoutConfiguration.eventMenu.dataDisplayColor)
 							.style("display", "none"); 
 				
-				host.append("span").attr("id", "lengthScratchPad")
+				host.append("span").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+													"lengthScratchPad"))
 									.style("display", "hidden");
-				
-				
-			 
-							
+								
 				/******************************************************************************
 				 * 
 				 * TODO: 
@@ -1450,11 +1461,31 @@ function loadMultipleSubrangeSelector() {
 				addInternalFormTable(convertIdToIdSelector("updateForm"), tableHeader, tableBody);
 				
 				d3.select(convertIdToIdSelector("rangeEditor")).append("select")
-							.attr("id", "rangeEditorOptions")
-							.style("display", "none");
+							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "rangeEditorOptions"))
+							.style("display", "none")
+							.on("change", function (d) {
+								
+								console.log("MutlipleSubrangeSelector::RangeEditor onChange called...");
+								
+								var selected = d3.select(convertIdToIdSelector("rangeEditorOptions")).node().value;
+								
+								var index = GoUtilities.FindIndexByKeyValue(rectangles, "id", selected);
+								
+								if (-1 != index) {
+								
+									var datum = rectangles[index];
+									d3.select(convertIdToIdSelector(updateButtonId)).datum(datum);
+									d3.select(convertIdToIdSelector(deleteButtonId)).datum(datum);	
+									
+									d3.select(convertIdToIdSelector("startValue")).property("value", layoutConfiguration.updateMenu.valueFormatter(datum.atOffset, 2));
+									d3.select(convertIdToIdSelector("widthValue")).property("value", layoutConfiguration.updateMenu.valueFormatter(convertCoordinatesToSeriesOffset(datum.width), 2));
+								}
+
+								return;
+							});
 				
 				d3.select(convertIdToIdSelector("rangeEditor")).append("span")
-							.attr("id", "rangeEditorLabel")
+							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "rangeEditorLabel"))
 							.style("display", "none");
 				
 				d3.select(convertIdToIdSelector(updateButtonId)).on("click", updateRangeClicked);
@@ -1502,11 +1533,33 @@ function loadMultipleSubrangeSelector() {
 				addInternalFormTable(convertIdToIdSelector("eventForm"), tableHeader, tableBody);
 				
 				d3.select(convertIdToIdSelector("eventEditor")).append("select")
-						.attr("id", "eventEditorOptions")
-						.style("display", "none");
-			
+						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "eventEditorOptions"))
+						.style("display", "none")
+						.on("change", function(d) {
+							
+							console.log("MultipleSubrangeSelector::eventEditor onChange called...");
+							
+							var selected = d3.select(convertIdToIdSelector("eventEditorOptions")).node().value;
+							
+							var index = GoUtilities.FindIndexByKeyValue(events, "id", selected);
+							
+							if (-1 != index) {
+							
+								var datum = events[index];
+								d3.select(convertIdToIdSelector(addEventLabelId)).datum(datum);
+								d3.select(convertIdToIdSelector(deleteEventLabelId)).datum(datum);
+								
+								d3.select(convertIdToIdSelector("eventDate")).property("value", datum.atOffset);
+								d3.select(convertIdToIdSelector("labelValue")).property("value", datum.eventLabel);
+
+							}
+
+							return;
+						});
+
+				
 				d3.select(convertIdToIdSelector("eventEditor")).append("span")
-							.attr("id", "eventEditorLabel")
+							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "eventEditorLabel"))
 							.style("display", "none");
 				
 				d3.select(convertIdToIdSelector(addEventLabelId)).on("click", updateEventClicked);
@@ -1572,21 +1625,28 @@ function loadMultipleSubrangeSelector() {
 				timeSeriesAxis = d3.svg.axis()
 										.scale(timeSeriesScale)
 										.orient("bottom");
+				
 										
-				svg = d3.select(d3.select(containerId).node().parentNode).insert("div", containerId)
+//				svg = d3.select(d3.select(containerId).node().parentNode).insert("div", containerId)
+				svg = d3.select(containerId).append("div")
 								.style("position", "absolute")
 								.style("top", layoutConfiguration.margins.top + "px")
-								.style("left", layoutConfiguration.margins.left + "px")
+								.style("left", ((layoutConfiguration.margins.left * 1.25) 
+													+ layoutConfiguration.eventMenu.width) + "px")
 							.append("svg")
 								.attr("width", elementWidth)
-								.attr("height", (elementHeight + layoutConfiguration.margins.bottom + layoutConfiguration.eventLabels.height))
+								.attr("height", (elementHeight 
+													+ layoutConfiguration.margins.bottom 
+													+ layoutConfiguration.eventLabels.height))
 							.append("g")
-								.attr("id", "multiplesubrangeselector_ui")
+								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+													"multiplesubrangeselector_ui"))
 								.attr("transform", "translate(0" 
 										+ ", 0)");
 				
 				svg.append("rect")
-						.attr("id", "multiplesubrangeselector_target")
+						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+										"multiplesubrangeselector_target"))
 						.attr("x", 0)
 						.attr("y", 0)
 						.attr("width", layoutConfiguration.width)
@@ -1614,7 +1674,8 @@ function loadMultipleSubrangeSelector() {
 						});
 										
 				svg.append("g")
-						.attr("id", "multiplesubrangeselector_xAxis")
+						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+											"multiplesubrangeselector_xAxis"))
 						.attr("class", "x axis")
 						.attr("transform", "translate(" 
 								+ layoutConfiguration.margins.left 
@@ -1629,7 +1690,8 @@ function loadMultipleSubrangeSelector() {
 							.attr("transform", "rotate(" + layoutConfiguration.axisLabels.angle + ")");
 
 				svg.append("g")
-				.attr("id", "eventTarget")
+				.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+											"eventTarget"))
 				.attr("transform", "translate(" 
 						+ layoutConfiguration.margins.left 
 						+ ", "
@@ -1663,7 +1725,7 @@ function loadMultipleSubrangeSelector() {
 				return;
 			}
 					
-			function buildUI(containerId, timeSeriesDomain) {
+			function buildUI(containerId, prefix, timeSeriesDomain) {
 				
 				console.log("MultipleSubrangeSelector::buildUI called...");
 				
@@ -1693,13 +1755,19 @@ function loadMultipleSubrangeSelector() {
 			/**************************************************************************************
 			 * Define a new Giant Oak UI Control to be added to the Controls Global Collection
 		     **************************************************************************************/
-			var ctor = function MultipleSubrangeSelector(containerId, timeSeriesDomain, layout) {
+			var ctor = function MultipleSubrangeSelector(instancePrefix, containerId, timeSeriesDomain, layout) {
 		
 					console.log("MultipleSubrangeSelector::MultipleSubrangeSelector called...");
 					
 					/**************************************************************************************
 					 * Check that all required the call parameters are defined... 
 				     **************************************************************************************/
+					
+					if (!instancePrefix) {
+					
+						throw new Error("Prefix argument not defined.");
+					}
+					
 					
 					if (!containerId) {
 					
@@ -1716,9 +1784,11 @@ function loadMultipleSubrangeSelector() {
 						throw new Error("Layout Configuration data argument not defined.");
 					}
 					
+					prefix = instancePrefix;
+					
 					layoutConfiguration = layout;
 					
-					buildUI(containerId, timeSeriesDomain);
+					buildUI(containerId, prefix, timeSeriesDomain);
 			
 								
 				};

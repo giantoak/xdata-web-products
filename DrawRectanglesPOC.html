@@ -167,6 +167,7 @@
 															return Number(value).toFixed(precision); 
 														},
 													formatPrecision: 2,
+													width: 230,
 													inOpacity: 0.9,
 													outOpacity: 0
 													},
@@ -200,7 +201,7 @@
 														}
 												};
 					
-					var control = new mssc("#testContainer", [0,100], layoutConfiguration);
+					var control = new mssc("MSSC", "#testContainer", [0,100], layoutConfiguration);
 
 					control.AddOnNewSubrangeCreatedHandler(subrangeCreated);
 					control.AddDeletedSubrangeHandler(subrangeDeleted);
