@@ -25,13 +25,6 @@ function loadMultipleSubrangeSelector() {
 	var addEventLabelId = "addEventButton";
 	var deleteEventLabelId = "deleteEventButton";
 		
-	/******************************************************************************
-	 * 
-	 * TODO: 
-	 * Determine if the global object should be scoped to support Giant 
-	 * Oak's own identity as in go_controls or something similar.
-	 * 
-	******************************************************************************/
 	if ((!window.controls)
 			|| (!window.controls.MultipleSubrangeSelector)) {
 		
@@ -115,7 +108,7 @@ function loadMultipleSubrangeSelector() {
 			
 			/*************************************************************************
 			 * TODO: Create a better algorithm for figuring out unique identifiers 
-			 *		 for the new subrange.
+			 *		 for the new subrange.  Also, consider moving to Utilities namespace.
 			 ************************************************************************/
 
 			function createNewUniqueId(candidateId, len, selectorPrefix, idPrefix) {
@@ -374,9 +367,6 @@ function loadMultipleSubrangeSelector() {
 				var updateButton = d3.select(convertIdToIdSelector(addEventLabelId));
 				// Translate SVG to accommodate newly displayed menu 
 				
-				/*******************************************************************
-				 * TODO: Clean up the implementation of this Method
-				 *******************************************************************/
 				var eventEditorOptions = d3.select(convertIdToIdSelector("eventEditorOptions")); 
 				
 				if ("none" !== eventEditorOptions.style("display")) {
@@ -429,11 +419,6 @@ function loadMultipleSubrangeSelector() {
 				var deleteButton = d3.select(convertIdToIdSelector(deleteEventLabelId));
 				// Translate SVG to accommodate newly displayed menu 
 				
-				/*******************************************************************
-				 * TODO: Clean up the implementation of this Method
-				 *******************************************************************/
-				
-				// Translate SVG to accommodate newly displayed menu 
 				var datum = deleteButton.datum();
 				var index = events.indexOf(datum);
 				
@@ -483,17 +468,7 @@ function loadMultipleSubrangeSelector() {
 							.style("display", "block")
 							.style("opacity", 1);
 	
-//					.attr("x", (layoutConfiguration.margins.left/4))
-			
-//					svg.attr("transform", "translate(" 
-//							+ (layoutConfiguration.updateMenu.width + (layoutConfiguration.margins.left/4)) 
-//							+ ", 0)");
-//
 				} else {
-					
-//					svg.attr("transform", "translate(" 
-//							+ (layoutConfiguration.margins.left/4) 
-//							+ ", 0)");
 				}
 				
 				return;
@@ -510,9 +485,6 @@ function loadMultipleSubrangeSelector() {
 					var eeo = d3.select(convertIdToIdSelector("eventEditorOptions"));
 	
 					if ("none" === eventEditor.style("display")) {
-						
-						// Add HTML combobox element to thead row with options populated from Events Array
-						// This combobox element needs an event handler to populate the rest of the Event Editor Form
 						
 						eeo.style("display", "block")
 								.selectAll("option").remove();
@@ -717,10 +689,6 @@ function loadMultipleSubrangeSelector() {
 										return;
 									});
 
-			/**************************************************************
-			 * TODO: Implement 
-			 *************************************************************/
-			 
 			var updateEvents = function () {
 				
 				var throwOut = d3.selectAll("g.events");
@@ -874,8 +842,6 @@ function loadMultipleSubrangeSelector() {
 										
 			};
 			
-			///////////////////////////////////////////////////////////////////
-			
 			var updateSubrange = function() {
 			
 				// Remove/replace the throwOut - reload calls with the example detailed at
@@ -892,7 +858,8 @@ function loadMultipleSubrangeSelector() {
 								.attr("class", "ranges")
 								.attr("id", function(d) {
 									
-										return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "rangeSelections_" + d.id);
+										return GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+																	"rangeSelections_" + d.id);
 									})
 								.attr("transform", function (d) {
 									
@@ -1116,7 +1083,6 @@ function loadMultipleSubrangeSelector() {
 				
 			};
 			
-			///////////////////////////////////////////////////////////////////
 			/**************************************************************************************
 			 * NON-Public variables and Methods.
 			**************************************************************************************/
@@ -1342,9 +1308,6 @@ function loadMultipleSubrangeSelector() {
 										.style("height", elementHeight + "px")
 										.style("position", "absolute");
 				
-				/**********************************************
-				 * TODO: Update left positioning info on both 'target' controls.
-				 */
 				menuRollout.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 														"eventMenuTrigger"))
 								.style("background-color", layoutConfiguration.eventMenu.backgroundColor)
@@ -1410,16 +1373,6 @@ function loadMultipleSubrangeSelector() {
 													"lengthScratchPad"))
 									.style("display", "hidden");
 								
-				/******************************************************************************
-				 * 
-				 * TODO: 
-				 * Just add class attribute to the DIV (could be explicitly added during 
-				 * insert after call.  If done this way, need to defined Giant Oak Controls
-				 * CSS File to be included by the developer, and remove the element explicit
-				 * overrides, being defined with the .css() calls.
-				 * 
-				******************************************************************************/
-
 				var tableHeader = new Array({ 
 					colspan: 2, 
 					id: "rangeEditor", 
@@ -1477,8 +1430,10 @@ function loadMultipleSubrangeSelector() {
 									d3.select(convertIdToIdSelector(updateButtonId)).datum(datum);
 									d3.select(convertIdToIdSelector(deleteButtonId)).datum(datum);	
 									
-									d3.select(convertIdToIdSelector("startValue")).property("value", layoutConfiguration.updateMenu.valueFormatter(datum.atOffset, 2));
-									d3.select(convertIdToIdSelector("widthValue")).property("value", layoutConfiguration.updateMenu.valueFormatter(convertCoordinatesToSeriesOffset(datum.width), 2));
+									d3.select(convertIdToIdSelector("startValue")).property("value", 
+												layoutConfiguration.updateMenu.valueFormatter(datum.atOffset, 2));
+									d3.select(convertIdToIdSelector("widthValue")).property("value", 
+												layoutConfiguration.updateMenu.valueFormatter(convertCoordinatesToSeriesOffset(datum.width), 2));
 								}
 
 								return;
@@ -1608,13 +1563,6 @@ function loadMultipleSubrangeSelector() {
 			
 			function buildVisualizationElements(containerId, timeSeriesDomain) {
 				
-				/******************************************************************************
-				 * 
-				 * TODO: 
-				 * Replace 'magic' numbers with data structure defining screen realestate of control.
-				 * 
-				******************************************************************************/
-
 				console.log("MultipleSubrangeSelector::buildVisualizationElements called...");
 				
 				// Range is function of the controls width
@@ -1627,7 +1575,6 @@ function loadMultipleSubrangeSelector() {
 										.orient("bottom");
 				
 										
-//				svg = d3.select(d3.select(containerId).node().parentNode).insert("div", containerId)
 				svg = d3.select(containerId).append("div")
 								.style("position", "absolute")
 								.style("top", layoutConfiguration.margins.top + "px")
