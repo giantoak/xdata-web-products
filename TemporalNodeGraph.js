@@ -97,6 +97,8 @@ function loadTemporalNodeGraph() {
 			var nodeToolTipActivated = new GoControls.EventHandlerManagement();
 			var nodeToolTipDeactivated = new GoControls.EventHandlerManagement();
 			
+			var nodeClickedEventManager = new GoControls.EventHandlerManagement();
+			
 			var addStepBackEventHandler = function addStepBackEventHandler(handler) {
 				
 				stepBackwardsEventManagement.addHandler(handler);
@@ -183,6 +185,19 @@ function loadTemporalNodeGraph() {
 				return;
 			};
 
+			var addNodeClickedEventHandler = function addNodeClickedEventHandler(handler) {
+				
+				nodeClickedEventManager.addHandler(handler);
+				
+				return;
+			};
+
+			var removeNodeClickedEventHandler = function removeNodeClickedEventHandler(handler) {
+				
+				nodeClickedEventManager.removeHandler(handler);
+				
+				return;
+			};
 			
 			var statsOptions = new Array ( 
 					{
@@ -247,6 +262,14 @@ function loadTemporalNodeGraph() {
 												});
 
 				}
+				
+				return;
+			};
+			
+			var handleClick = function click(d) {
+				console.log("TemporalNodeGraph::handleClick called...");
+				
+				nodeClickedEventManager.fireHandlers(svg, d);
 				
 				return;
 			};
@@ -449,6 +472,7 @@ function loadTemporalNodeGraph() {
 						.on("dblclick", handleDoubleClick)
 						.on("mouseover", nodeMouseOver)
 						.on("mouseout", nodeMouseOut)
+						.on("click", handleClick)
 						.call(drag);
 	
 				workingSet.enter()
@@ -477,6 +501,7 @@ function loadTemporalNodeGraph() {
 							.on("dblclick", handleDoubleClick)
 							.on("mouseover", nodeMouseOver)
 							.on("mouseout", nodeMouseOut)
+							.on("click", handleClick)
 							.call(drag);
 
 				workingSet.exit().remove();
@@ -910,18 +935,6 @@ function loadTemporalNodeGraph() {
 				return;				
 			}
 			
-			/**********************************************************************************
-			 * TODO: 	Figure out how to manage stepping through the time series. 
-			 * 		 	The issue is that this control does not need to understand
-			 * 			how to advance through the time line only that the user has requested
-			 * 			to step backwards in time and step forwards in time.  
-			 * 
-			 * 			Possibly these functions should track the current time, fetch the 
-			 * 			appropriate set of nodes (calling UpdateData with the new set), 
-			 * 			and as a side effect update the period label.
-			 * 
-			 * 			Add Events for mouse over Nodes and Links in the graph.
-			 *********************************************************************************/
 
 			/**************************************************************************************
 			 * Define a new Giant Oak UI Control to be added to the Controls Global Collection
@@ -972,7 +985,10 @@ function loadTemporalNodeGraph() {
 					AddNodeToolTipActivatedEventHandler: addNodeToolTipActivatedEventHandler,
 					RemoveNodeToolTipActivatedEventHandler: removeNodeToolTipActivatedEventHandler,					
 					AddNodeToolTipDeactivatedEventHandler: addNodeToolTipDeactivatedEventHandler,
-					RemoveNodeToolTipDeactivatedEventHandler: removeNodeToolTipDeactivatedEventHandler 
+					RemoveNodeToolTipDeactivatedEventHandler: removeNodeToolTipDeactivatedEventHandler, 
+					
+					AddNodeClickedEventHandler: addNodeClickedEventHandler,
+					RemoveNodeClickedEventHandler: removeNodeClickedEventHandler
 				};
 
 			var statics = {};

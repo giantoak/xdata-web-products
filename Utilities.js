@@ -268,6 +268,22 @@ function loadUtilitiesModule() {
 	                }
 	                return null;
 	            };
+	            
+	        var findSortedInsertionPointWithKey = function findSortedInsertionPointWithKey(obj, key, value) {
+	        	
+	        	var results = null;
+	        	
+	        	for (var i = 0; i < obj.length; i++) {
+	        		
+	        		if (obj[i][key] > value) {
+	        			
+	        			results = i;
+	        			break;
+	        		}
+	        	}
+	        	
+	        	return results;	        	
+	        };
 	
 
 	        var generateComponentSpecificIdentifiers = function generateComponentSpecificIdentifiers(prefix, identifier) {
@@ -425,6 +441,7 @@ function loadUtilitiesModule() {
 						MapColors: mapColors,
 						FetchData: fetchData,
 						FindIndexByKeyValue: findIndexByKeyValue,
+						FindSortedInsertionPointWithKey: findSortedInsertionPointWithKey,
 						GenerateComponentSpecificIdentifiers: generateComponentSpecificIdentifiers,
 						GenerateClassSelector: generateClassSelector,
 						GenerateIdentifierSelector: generateIdentifierSelector

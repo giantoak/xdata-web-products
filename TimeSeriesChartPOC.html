@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Proof of Concept of Time Series Charts Component</title>
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+		
+		<style type="text/css">
+		
+			path {
+				stroke: steelblue;
+				stroke-width: 2;
+				fill: none;
+			}
+			
+			.axis path,
+			.axis line {
+				fill: none;
+				stroke: grey;
+				stroke-width: 1;
+				shape-rendering: crispEdges;
+			}
+			
+			.brush .extent {
+				stroke: #fff;
+				fill-opacity: .125;
+				shape-rendering: crispEdges;
+			}
+			
+			.loader {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				right: 0;
+				background: rgba(255,255,255,0.8);
+				text-align: center;
+				z-index: 99;
+				display: none;
+			}
+			
+			.loader p {
+				margin-top: 180px;
+			}
+			
+		</style>
+		
+	</head>
+	<body>
+	
+		<div id="testContainer" style="padding: 2px; margin: 2px; border: 1px solid black; background-color: beige; "></div>
+		
+		<script type="text/javascript" src="Utilities.js" defer="defer"></script>
+		<script type="text/javascript" src="TimeSeriesCharts.js" defer="defer"></script>
+		
+		<script type="text/javascript" >
+		
+			$(document).ready( function setupPage() {
+				
+				console.log("JQuery::Document::ready handler called...");
+				
+				var GoUtilities = window.utilities;
+				var GoControls = window.controls;
+				
+				var layoutConfiguration = {
+						containerProperties: {
+							top: 20,
+							left: 20,
+							width: 900,
+							height: 300,
+							borders: "10px solid purple",
+							backgroundColor: "white",
+							padding: 5,
+							margins: 5
+						},
+						margins: {
+							top: 20,
+							left: 40,
+							right: 40,
+							bottom: 20,
+							horizontalMargins: 40,
+							verticalMargins: 80
+						},
+						graphRegion: {
+							width: 800,
+							height: 300,
+							legendOffset: 45,
+							textAnchor: "end",
+							duration: 700,
+							hoverLine: {
+								x1: 20,
+								x2: 20,
+								y1: 2,
+								y2: 320,
+								strokeWidth: 1,
+								strokeColor: "grey",
+								hiddenOpacity: 1e-6,
+								displayedOpacity: 0.85
+							}
+						},
+						analog: {
+							chartHeight: 100
+						},
+						digital: {
+							chartHeight: 20
+						},
+						horizontal: {
+							chartHeight: 100,
+							domain: [-1, 0, 0, 1],
+							range: ["#08519c", "#bdd7e7", "#bad4b3", "#006d2c"]
+						}
+				};
+				
+				var tsc = GoControls.TimeSeriesCharts;
+				var control = new tsc("TSC", "#testContainer", layoutConfiguration);
+				
+				control.render();
+				
+				console.log("JQuery::Document::ready handler completed.");
+				
+				return;
+			});
+		</script>
+	</body>
+</html>

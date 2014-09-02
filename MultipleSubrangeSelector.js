@@ -56,7 +56,7 @@ function loadMultipleSubrangeSelector() {
 			
 			// Define local alias to the Utilities Namespace.
 			var GoUtilities = window.utilities;	
-			var GoControls = window.utilities.controls;
+			var GoAbstractControls = window.utilities.controls;
 			var timeSeriesScale = null;
 			var timeSeriesAxis = null;
 			var toolTip = null;
@@ -71,11 +71,11 @@ function loadMultipleSubrangeSelector() {
 			var prefix = null;
 			
 			
-			var subrangeCreationEventManagement = new GoControls.EventHandlerManagement();
-			var subrangeDeletedEventManagement = new GoControls.EventHandlerManagement();
+			var subrangeCreationEventManagement = new GoAbstractControls.EventHandlerManagement();
+			var subrangeDeletedEventManagement = new GoAbstractControls.EventHandlerManagement();
 			
-			var seriesEventCreationEventManagement = new GoControls.EventHandlerManagement();
-			var seriesEventDeletedEventManagement = new GoControls.EventHandlerManagement();
+			var seriesEventCreationEventManagement = new GoAbstractControls.EventHandlerManagement();
+			var seriesEventDeletedEventManagement = new GoAbstractControls.EventHandlerManagement();
 			
 			
 			// Presuppose that the JQuery Javascript Library has been loaded
@@ -135,7 +135,7 @@ function loadMultipleSubrangeSelector() {
 						"height": layoutConfiguration.rangeBrush.height,
 						"atOffset": convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left),
 						"id": GoUtilities.GenerateComponentSpecificIdentifiers(prefix, ("rect_" + rectangles.length)),
-						"onPositionUpdated": new GoControls.EventHandlerManagement() 
+						"onPositionUpdated": new GoAbstractControls.EventHandlerManagement() 
 					};
 				
 				var len = rectangles.length;
@@ -1763,14 +1763,14 @@ function loadMultipleSubrangeSelector() {
 				};
 			var statics = {};
 			
-			console.log ("MultipleSubrangeSelector::GoControls.AbstractUIControl contains: ");
+			console.log ("MultipleSubrangeSelector::GoAbstractControls.AbstractUIControl contains: ");
 			
-			for (var prop in GoControls.AbstractUIControl) {
+			for (var prop in GoAbstractControls.AbstractUIControl) {
 				
-				console.log("MultipleSubrangeSelector::GoControls.AbstractUIControl." + prop);
+				console.log("MultipleSubrangeSelector::GoAbstractControls.AbstractUIControl." + prop);
 			}
 			
-			var MultipleSubrangeSelector = GoControls.AbstractUIControl.extend(ctor, methods, statics);	
+			var MultipleSubrangeSelector = GoAbstractControls.AbstractUIControl.extend(ctor, methods, statics);	
 		
 				
 			return MultipleSubrangeSelector;
