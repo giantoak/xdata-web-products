@@ -293,7 +293,7 @@ function loadUtilitiesModule() {
 	        
 	        var generateClassSelector = function generateClassSelector (identifier) {
 	        	
-	        	return "." + identifer;
+	        	return "." + identifier;
 	        };
 	        
 	        var generateIdentifierSelector = function generateIdentifierSelector(identifier) {

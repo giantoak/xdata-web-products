@@ -26,16 +26,22 @@ function loadTimeSeriesCharts() {
 		
 	
 	if ((!window.controls)
-			|| (!window.controls.TimeSeriesCharts)) {
+			|| (!window.controls.TimeSeriesCharts)
+			|| (!window.controls.TimeSeriesCharts.ChartManager)) {
 			
 			if (!window.controls) {
 			
 				window.controls = {};
 			}
 			
+			if (!window.controls.TimeSeriesCharts) {
+				
+				window.controls.TimeSeriesCharts = {};
+			}
+			
 	
 			// Explicitly define the contents of the namespace
-			window.controls.TimeSeriesCharts = (function GiantOakControlsNamespace() {
+			window.controls.TimeSeriesCharts.ChartManager = (function GiantOakControlsNamespace() {
 				
 				console.log("TimeSeriesCharts::GiantOakControlsNamespace called...");
 				
@@ -48,6 +54,7 @@ function loadTimeSeriesCharts() {
 					loadUtilitiesModule();
 				}				
 				
+				var component = null;
 				// Define local alias to the Utilities Namespace.
 				var GoUtilities = window.utilities;	
 				var GoAbstractControls = window.utilities.controls;
@@ -61,6 +68,401 @@ function loadTimeSeriesCharts() {
 				var graphs = new Array();
 				var monthNames = new Array ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
 				var activePlayHead = false;
+				var elementWidth = null;
+				var elementHeight = null;
+				var logChartHeight = 100;
+				var diChartHeight = 20;
+				
+				var analog = function analog () {
+					
+					var height = 100;
+					var gap = 10;
+					var xValue = function (d) { return d[0]; };
+					var xScale = null;
+					var color = d3.scale.category10();
+					
+					
+					function X(d) {
+						
+						return xScale(xValue(d));
+					}
+					
+					var timeScaleProperty = function timeScale(value) {
+						
+						var results = xScale;
+						
+						if (arguments.length) {
+							
+							xScale = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var xProperty = function (value) {
+						
+						var results = xValue;
+						
+						if (arguments.length) {
+							
+							xValue = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var heightProperty = function (value) {
+						
+						var results = height;
+						
+						if (arguments.length) {
+							
+							height = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var gapProperty = function (value) {
+						
+						var results = gap;
+						
+						if (arguments.length) {
+							
+							gap = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var colors = function (value) {
+						
+						var results = color;
+						
+						if (arguments.length) {
+							
+							color = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var init = function init(control, selection) {
+						
+						selection.each (function (d) {
+								
+								var g = d3.select(this);
+								var chartConfig = this.__chart__;
+								
+								if (chartConfig) {
+									
+									var yDomain = chartConfig.yDomain;
+									var y = chartConfig.y;
+									
+								} else {
+									
+									var minY = d3.min(d.data, function (element) {
+										return d3.min(d.yVal.map(function (c) { return element[c]; }));
+									});
+									
+									var maxY = d3.max(d.data, function (element) {
+										return d3.max(d.yVal.map(function (c) { return element[c]; }));
+									});
+									
+									minY = d3.min(d.yVal.map(function (c) { return d3.min(minY[c]); }));
+									maxY = d3.max(d.yVal.map(function (c) { return d3.max(maxY[c]); }));
+									
+									yDomain = new Array(minY, maxY);
+									
+									y = d3.scale.linear().domain(yDomain).range(new Array((height - gap), 0));
+									
+									var yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
+									
+									g.attr("id", d.id)
+										.append("g")
+											.attr("class", "y axis")
+											.attr("transform", "translate(-1, 0)")
+											.call(yAxis);
+									
+								}
+								
+								d.yVal.forEach(function (c, i) {
+									
+									var valueLine = d3.svg.line()
+														.x(X)
+														.y(function (a) { return y(a[c]); });
+									
+									if (chartConfig) {
+									
+										g.select(".path." + c).transition()
+												.duration(1000)
+													.attr("d", valueLine(d.data));
+										
+									} else {
+										
+										g.append("path")
+											.attr("class", "path " + c)
+											.attr("d", valueLine(d.data))
+											.attr("clip-path", "url(#clip)")
+											.style("stroke", color(d.id + i));
+										
+										g.append("text").text(d.name)
+											.attr("class", "legend")
+											.attr("x", 10)
+											.attr("y", 10);
+										
+									}
+								});
+								
+								control.__chart__ = { yDomain: yDomain, y: y };
+								
+						});
+					};
+					
+					/**************************************************************************************
+					 * Define a new Giant Oak UI Control to be added to the Controls Global Collection
+				     **************************************************************************************/
+					var ctor = function AnalogTimeSeriesCharts(selection) {
+				
+							console.log("TimeSeriesCharts::Analog::AnalogTimeSeriesCharts called...");
+							
+							/**************************************************************************************
+							 * Check that all required the call parameters are defined... 
+						     **************************************************************************************/
+							
+							if (selection) {
+								
+								init(this, selection);
+							}
+							
+							return this;
+						};
+						
+					var methods = {
+							colors: colors,
+							x: xProperty,
+							y: yProperty,
+							height: heightProperty,
+							gap: gapProperty,
+							timeScale: timeScaleProperty,
+							initialize: init
+					};
+					var statics = {};
+					
+					var component = GoAbstractControls.AbstractUIControl.extend(ctor, methods, statics);	
+						
+					return component;					
+					
+				};
+				
+				
+				var digital = function digital() {
+					
+					var height = 100;
+					var xValue = function (d) { return d[0]; };
+					var yValue = function (d) { return d[1]; };
+					var xScale = null;
+					var yScale = d3.scale.linear().domain(new Array(0, 1));
+					var color = d3.scale.category10();
+					var line = d3.svg.line().interpolate('step-after').x(X).y(Y);
+					
+					function X(d) {
+						
+						return xScale(xValue(d));
+					}
+					
+					function Y(d) {
+						
+						return yScale(yValue(d));
+					}
+					
+					var timeScaleProperty = function timeScale(value) {
+						
+						var results = xScale;
+						
+						if (arguments.length) {
+							
+							xScale = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var xProperty = function (value) {
+						
+						var results = xValue;
+						
+						if (arguments.length) {
+							
+							xValue = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					
+					var yProperty = function (value) {
+						
+						var results = yValue;
+						
+						if(arguments.length) {
+							
+							yValue = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var colors = function (value) {
+					
+						var results =  color;
+						
+						if (arguments.length) {
+							
+							color = value;
+							
+							results = this;
+						}
+						
+						return results;
+					};
+					
+					var heightProperty = function (value) {
+						
+						var results = height;
+						
+						if (arguments.length) {
+							
+							height = value;
+							
+							resutls = this;
+						}
+						
+						return results;
+					};
+					
+					var init = function init(control, selection) {
+						
+						selection.each(function (d) {
+							
+							var g = d3.select(this);
+							
+							var chartConfig = this.__chart__;
+							var noChannels = 0;
+							var diGroups = {};
+							d.data.forEach(function (element) {
+								
+								if (!(diGroups[element.Channel])) {
+									
+									diGroups[element.Channel] = new Array();
+									
+									++noChannels;
+								}
+								
+								diGroups[element.Channel].push(element);
+							});
+							
+							var gh = height;
+							var yHeight = gh / noChannels - 5;
+							yScale.range(new Array(yHeight, 0));
+							var txHeight = gh / noChannels;
+							
+							var mapping = function (data, channel, i) {
+								
+								if (chartConfig) {
+									
+									g.select(".path.di_" + channel)
+											.transition().duration(600)
+												.attr("d", line(data))
+												.attr("transform", "translate(0," + (i * txHeight) + ")");
+									
+									g.select(".inputLabel" + channel)
+											.transition().duration(600)
+												.attr("transform", "translate(0," + (i++ * txHeight + (yHeight / 2)) + ")");
+									
+								} else {
+									
+									g.append("path")
+										.attr("class", "path di_" + channel)
+										.attr("d", line(data))
+										.attr("clip-path", "url(#clip")
+										.style("stroke", color(d.id + channel))
+										.attr("transform", "translate(0, " + (i * txHeight) + ")");
+									
+									g.append("svg:text")
+										.text(channel)
+										.attr("class", "inputLabel" + channel)
+										.attr("text-anchor", "end")
+										.attr("transform", "translate(0, " + (i++ * txHeight + (yHeight / 2)) + ")");
+									
+										
+								}
+								
+								return i;
+							};
+							
+							var i = 0;
+							for (var channel in diGroups) {
+								
+								i = mapping(diGroups[channel], channel, i);
+							}
+															
+							control.__chart__ = { update: true };
+						});
+					};
+					
+					
+					/**************************************************************************************
+					 * Define a new Giant Oak UI Control to be added to the Controls Global Collection
+				     **************************************************************************************/
+					var ctor = function DigitalTimeSeriesCharts(selection) {
+				
+							console.log("TimeSeriesCharts::Digital::DigitalTimeSeriesCharts called...");
+							
+							/**************************************************************************************
+							 * Check that all required the call parameters are defined... 
+						     **************************************************************************************/
+							if (selection) {
+								
+								init(arguments.callee, selection);
+								
+							}
+							
+							return arguments.callee;
+						};
+						
+					var methods = {
+							colors: colors,
+							x: xProperty,
+							y: yProperty,
+							height: heightProperty,
+							timeScale: timeScaleProperty,
+							initialize: init
+					};
+					var statics = {};
+					
+					var component = GoAbstractControls.AbstractUIControl.extend(ctor, methods, statics);	
+				
+						
+					return component;					
+					
+				};
 				
 				var horizon = function horizon() {
 					
@@ -134,7 +536,7 @@ function loadTimeSeriesCharts() {
 						}
 						
 						return results;
-					}
+					};
 					
 					var interpolateFunctor = function interpolate(value) {
 						
@@ -220,7 +622,7 @@ function loadTimeSeriesCharts() {
 						return results;
 					};
 					
-					var gapProperties = function gapProperties(value) {
+					var gapProperty = function gapProperty(value) {
 						
 						var results = gap;
 						
@@ -236,12 +638,150 @@ function loadTimeSeriesCharts() {
 						return results;
 					};
 					
+					var init = function (control, selection) {
+						
+						selection.each(function (d, i) {
+							
+							var local = d3.select(this);
+							var n = 2 * bandCount + 1;
+							var xMin = Infinity;
+							var xMax = -Infinity;
+							var yMax = -Infinity;
+							var x0 = null;
+							var y0 = null;
+							var id = null;
+							
+							var data = d.data.map(function (d, i) {
+								
+								var xv = x.call(this, d, i);
+								var yv = y.call(this, d, i);
+								
+								if (xv < xMin) {
+									
+									xMin = xv;
+								}
+								
+								if (xv > xMax) {
+									
+									xMax = xv;
+								}
+								
+								if (-yv > yMax) {
+									
+									yMax = -yv;
+								}
+								
+								if (yv > yMax) {
+									
+									yMax = yv;
+								}
+								
+								return new Array(xv, yv);									
+							});
+							
+							var x1 = xScale;
+							var y1 = d3.scale.linear().domain(new Array(0, yMax)).range(new Array(0, (h * bandCount)));
+							var t1 = d3_horizonTransform(bandCount, h, mode);
+							
+							if (control.__chart__) {
+								var alias = control.__chart__;
+								
+								x0 = alias.x;
+								y0 = alias.y;
+								t0 = alias.t;
+								id = alias.id;
+							} else {
+								x0 = x1.copy();
+								y0 = y1.copy();
+								t0 = t1;
+								id = ++d3_horizonId;
+							}
+							
+							var defs = selection.selectAll("defs").data(new Array());
+							
+							defs.eneter().append("defs").append("clipPath")
+											.attr("id", "d3_horizon_clip" + id)
+										.append("rect")
+											.attr("width", w)
+											.attr("height", h);
+							
+							defs.select("rect").transition()
+									.transition()
+										.duartion(duration)
+											.attr("width", w)
+											.attr("height", h);
+							
+							selection.selectAll("g")
+									.data(new Array())
+								.enter().append("g")
+										.attr("clip-path", "url(#d3_horizon_clip" + id + ")");
+							
+							var path = selection.select("g").selectAll("path")
+											.data(d3.range(-1, -bandCount-1, -1).concat(d3.range(1, bandCount + 1)), Number);
+							
+							var d0 = d3_horizonArea.iterpolate(interpolate)
+												.x(function (d) { return x0(d[0]); })
+												.y0(h * bandCount)
+												.y1(function(d) { return h * bandCount - y0(d[1]); })
+												(data);
+							
+							var d1 = d3_horizonArea.x(function(d) { return x1(d[0]); })
+												.y1(function(d){ return h * bandCount - y0(d[1]); })
+												(data);
+							
+							path.enter().append("path")
+									.style("fill", color)
+									.style("transform", t0)
+									.style("d", d0);
+							
+							path.transition().duration(duration)
+									.style("fill", color)
+									.style("transform", t1)
+									.style("d", d1);
+							
+							path.exit().transition()
+										.duration(duration)
+										.attr("transform", t0)
+										.attr("d", d1)
+										.remove();
+							
+							selection.append("text").text(d.name)
+									.attr("class", "legend")
+									.attr("x", 10)
+									.attr("y", 10);
+
+							control.__chart__ = { x: x1, y: y1, t: t1, id: id };
+						});
+						
+						d3.timer.flush();
+						
+					};
 					
+
+					var d3_horizonArea = d3.svg.area();
+					var d3_horizonId = 0;
+					
+					function d3_horizonX(d) {
+						
+						return d[0];
+					}
+					
+					function d3_horizonY(d) {
+						
+						return d[1];
+					}
+					
+					function d3_horizonTransform(bands, h, mode) {
+						
+						return mode === "offset" 
+									? function (d) { return "translate(0, " + ((d + (d < 0) * bands) * h) + ")"; }
+									: function (d) { return (d < 0 ? "scale(1,-1)" : "") + "translate(0," + ((d - bands) * h) + ")"; };
+					}
 					
 					/**************************************************************************************
 					 * Define a new Giant Oak UI Control to be added to the Controls Global Collection
 				     **************************************************************************************/
-					var ctor = function HorizonTimeSeriesCharts(g) {
+					var ctor = function HorizonTimeSeriesCharts(selection) {
 				
 							console.log("TimeSeriesCharts::Horizon::HorizonTimeSeriesCharts called...");
 							
@@ -249,120 +789,12 @@ function loadTimeSeriesCharts() {
 							 * Check that all required the call parameters are defined... 
 						     **************************************************************************************/
 							
-							g.each(function (d, i) {
+							if (selection) {
 								
-								var local = d3.select(this);
-								var n = 2 * bandCount + 1;
-								var xMin = Infinity;
-								var xMax = -Infinity;
-								var yMax = -Infinity;
-								var x0 = null;
-								var y0 = null;
-								var id = null;
-								
-								var data = d.data.map(function (d, i) {
-									
-									var xv = x.call(this, d, i);
-									var yv = y.call(this, d, i);
-									
-									if (xv < xMin) {
-										
-										xMin = xv;
-									}
-									
-									if (xv > xMax) {
-										
-										xMax = xv;
-									}
-									
-									if (-yv > yMax) {
-										
-										yMax = -yv;
-									}
-									
-									if (yv > yMax) {
-										
-										yMax = yv;
-									}
-									
-									return new Array(xv, yv);									
-								});
-								
-								var x1 = xScale;
-								var y1 = d3.scale.linear().domain(new Array(0, yMax)).range(new Array(0, (h * bandCount)));
-								var t1 = d3_horizonTransform(bandCount, h, mode);
-								
-								if (this.__chart__) {
-									var alias = this.__chart__;
-									
-									x0 = alias.x;
-									y0 = alias.y;
-									t0 = alias.t;
-									id = alias.id;
-								} else {
-									x0 = x1.copy();
-									y0 = y1.copy();
-									t0 = t1;
-									id = ++d3_horizonId;
-								}
-								
-								var defs = g.selectAll("defs").data(new Array());
-								
-								defs.eneter().append("defs").append("clipPath")
-												.attr("id", "d3_horizon_clip" + id)
-											.append("rect")
-												.attr("width", w)
-												.attr("height", h);
-								
-								defs.select("rect").transition()
-										.transition()
-											.duartion(duration)
-												.attr("width", w)
-												.attr("height", h);
-								
-								g.selectAll("g")
-										.data(new Array())
-									.enter().append("g")
-											.attr("clip-path", "url(#d3_horizon_clip" + id + ")");
-								
-								var path = g.select("g").selectAll("path")
-												.data(d3.range(-1, -bandCount-1, -1).concat(d3.range(1, bandCount + 1)), Number);
-								
-								var d0 = d3_horizonArea.iterpolate(interpolate)
-													.x(function (d) { return x0(d[0]); })
-													.y0(h * bandCount)
-													.y1(function(d) { return h * bandCount - y0(d[1])})
-													(data);
-								
-								var d1 = d3_horizonArea.x(function(d) { return x1(d[0]); })
-													.y1(function(d){ return h * bandCount - y0(d[1])})
-													(data);
-								
-								path.enter().append("path")
-										.style("fill", color)
-										.style("transform", t0)
-										.style("d", d0);
-								
-								path.transition().duration(duration)
-										.style("fill", color)
-										.style("transform", t1)
-										.style("d", d1);
-								
-								path.exit().transition()
-											.duration(duration)
-											.attr("transform", t0)
-											.attr("d", d1)
-											.remove();
-								
-								g.append("text").text(d.name)
-										.attr("class", "legend")
-										.attr("x", 10)
-										.attr("y", 10);
-
-								this.__chart__ = { x: x1, y: y1, t: t1, id: id };
-							});
+								init(this, selection);
+							}
 							
-							d3.timer.flush();
+							return this;
 						};
 						
 					var methods = {
@@ -376,7 +808,8 @@ function loadTimeSeriesCharts() {
 							width: widthProperty,
 							height: heightProperty,
 							timeScale: timeScaleProperty,
-							gap: gapProperty
+							gap: gapProperty,
+							initialize: init
 					};
 					var statics = {};
 					
@@ -525,22 +958,59 @@ function loadTimeSeriesCharts() {
 					return;
 				};
 				
-			function selectChart(d) {
+			function selectChart(component, d) {
 				
 				var chart = null;
+				var selection = d3.select(".graph");
 				
 				if ("analog" === d.type) {
 				
+					var ctor = new component.Analog; 
+					chart = ctor();
+					
+					chart.height(logChartHeight).gap(gap).color(color);
 					
 				} else if ("digital" === d.type) {
 					
+//					var ctor = new component.Digital;
+//					chart = ctor();
+					
+					chart= new (component.Digital());
+					
+					for (var prop in chart) {
+						
+						console.log("chart." + prop);
+					}
+
+					for (var prop in chart.prototype) {
+						
+						console.log("chart.prototype." + prop);
+					}
+
+					
+					chart.height(graphHeight(logChartHeight))
+											.color(color)
+											.y(function (t) { return t.State ? 1 : 0; });
+					
 				} else if ("horizon" === d.type) {
 					
+					var mean = d.data.map(function (t) { return t.Value; } )
+										.reduce(function (p, v) { return p + v; }, 0) / d.data.length;
+					
+					var ctor = new component.Horizon;
+					chart = ctor();
+					chart.width(elementWidth)
+									.height(logChartHeight)
+									.gap(gap)
+									.y(function (t) { return t.Value - mean; })
+									.bands(3)
+									.mode("offset");
 				}
 				
 				if (chart) {
 					
 					chart.timeScale(xScale).x(function (t) { return t.DateTime.toDate(); });
+					chart.initialize(chart, selection);
 				}
 				
 				return chart;
@@ -579,10 +1049,10 @@ function loadTimeSeriesCharts() {
 					
 					console.log("TimeSeriesCharts::buildUI called...");
 					
-					var elementWidth = layoutConfiguration.containerProperties.width 
+					elementWidth = layoutConfiguration.containerProperties.width 
 											+ layoutConfiguration.margins.verticalMargins
 											+ layoutConfiguration.containerProperties.padding;
-					var elementHeight = layoutConfiguration.containerProperties.height
+					elementHeight = layoutConfiguration.containerProperties.height
 											+ layoutConfiguration.margins.horizontalMargins
 											+ layoutConfiguration.containerProperties.padding;
 					
@@ -671,7 +1141,7 @@ function loadTimeSeriesCharts() {
 					
 					graphs.forEach(function (element) {
 						
-						height += graphHeight(t);
+						height += graphHeight(element);
 					});
 					
 					var containerHeight = height + layoutConfiguration.margins.horizontalMargins;
@@ -792,10 +1262,10 @@ function loadTimeSeriesCharts() {
 						});
 					} else {
 						
-						graph.map = getLookupMap(g, xScale);
+						graph.map = getLookupMap(graph, xScale);
 					}
 					
-					var zoomScale = d3.time.scale().range([0, width]).domain(xDomain);
+					var zoomScale = d3.time.scale().range([0, elementWidth]).domain(xDomain);
 					var brush = d3.svg.brush()
 									.x(zoomScale)
 									.on('brushend', function () {
@@ -822,6 +1292,10 @@ function loadTimeSeriesCharts() {
 											return;
 										});
 									});
+					
+					console.log("Brush: " + brush);
+					console.log(brush);
+					
 					
 					d3.select(GoUtilities.GenerateIdentifierSelector(
 									GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "xAxis")))
@@ -923,7 +1397,7 @@ function loadTimeSeriesCharts() {
 					return;
 				};
 				
-				var render = function render() {
+				var render = function render(component) {
 					
 					console.log("TimeSeriesCharts::render called...");
 					
@@ -935,6 +1409,8 @@ function loadTimeSeriesCharts() {
 					
 					var xAxis = d3.svg.axis().scale(xScale).orient("top").ticks(5);
 					d3.select(".x.axis").call(xAxis);
+					
+					console.log("TimeSeriesCharts:render called '.x.axis' xAxis function" + xAxis);
 					
 					graphsComponents.exit().remove();
 					
@@ -955,7 +1431,7 @@ function loadTimeSeriesCharts() {
 //						g.transition().duration(layoutConfiguration.graphRegion.duration)
 //						.attr("transform", function (d) { return "translate(0, " + tx + ")"; });
 //		
-						g.call(selectChart(d));
+						g.call(selectChart(component, d));
 					});
 					
 					var newGraphs = graphsComponents.enter()
@@ -978,9 +1454,17 @@ function loadTimeSeriesCharts() {
 //										});
 					
 					newGraphs.each(function (d) {
+
+						console.log("iterating over the set of new graphs, calling: " + selectChart + "(" + d + ")");
 						
-						d3.select(this).call(selectChart(d));
-					});
+						d3.select(this).call(function () { 
+							
+							console.log("wrapper function called about to call 'selectChart', with: " + d);
+							selectChart(component, d); }); 
+							console.log("wrapper function called completed call to 'selectChart'");
+							
+							return;
+						});
 					
 					return;
 				};
@@ -1025,11 +1509,13 @@ function loadTimeSeriesCharts() {
 						removeGraph: removeGraph,
 						reorderGraph: reorderGraph,
 						render: render,
-						Horizon: horizon
+						Horizon: horizon,
+						Digital: digital,
+						Analog: analog
 				};
 				var statics = {};
 				
-				var component = GoAbstractControls.AbstractUIControl.extend(ctor, methods, statics);	
+				component = GoAbstractControls.AbstractUIControl.extend(ctor, methods, statics);	
 			
 					
 				return component;
