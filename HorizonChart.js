@@ -59,11 +59,7 @@ function loadHorizonChart() {
 						
 					loadChartManager();
 				}				
-				
-				
-				
-				
-				var component = null;
+	
 				// Define local alias to the Utilities Namespace.
 				var GoUtilities = window.utilities;	
 				var GoAbstractControls = window.utilities.controls;

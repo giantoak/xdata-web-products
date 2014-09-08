@@ -1,12 +1,12 @@
 /**
- * Time Series Analog Chart Control
+ * Time Series Scatter Chart Control
  */
 
-console.log("AnalogChart.js - Loaded...");
+console.log("ScatterChart.js - Loaded...");
 
-function loadAnalogChart() {
+function loadScatterChart() {
 
-	console.log ("AnalogChart::loadAnalogChart called...");
+	console.log ("ScatterChart::loadScatterChart called...");
 	
 	/******************************************************
 	 * isEmpty
@@ -27,7 +27,7 @@ function loadAnalogChart() {
 	
 	if ((!window.controls)
 			|| (!window.controls.TimeSeriesCharts)
-			|| (!window.controls.TimeSeriesCharts.AnalogChart)) {
+			|| (!window.controls.TimeSeriesCharts.ScatterChart)) {
 			
 			if (!window.controls) {
 			
@@ -41,9 +41,9 @@ function loadAnalogChart() {
 			
 	
 			// Explicitly define the contents of the namespace
-			window.controls.TimeSeriesCharts.AnalogChart = (function GiantOakControlsNamespace() {
+			window.controls.TimeSeriesCharts.ScatterChart = (function GiantOakControlsNamespace() {
 				
-				console.log("TimeSeriesCharts::GiantOakControlsNamespace called...");
+				console.log("ScatterChart::GiantOakControlsNamespace called...");
 				
 				// Determining if Giant Oak Utilities namespace has been defined is a 
 				// Special case and needs to come first as it provides a lot of basic
@@ -60,8 +60,6 @@ function loadAnalogChart() {
 					loadChartManager();
 				}				
 				
-
-				
 				var component = null;
 				// Define local alias to the Utilities Namespace.
 				var GoUtilities = window.utilities;	
@@ -69,18 +67,24 @@ function loadAnalogChart() {
 				var prefix = null;
 				var containerPrefix = null;
 				var layoutConfiguration = null;
-				var height = 100;
-				var gap = 10;
-				var xValue = function (d) { return d[0].getTime(); };
-				var yDomain = null;
 				var xScale = null;
-				var color = d3.scale.category10();
-				var y = null;
+                var height = 100;
+                var gap=10;
+                var xValue = function(d) { 
+                					return d[0]; 
+                				};
+                var  color = d3.scale.category10();
+                
 				var id = null;
 
 				function X(d) {
 					
-					return xScale(xValue(d));
+					var intermediate = xValue(d);
+					var results = xScale(intermediate);
+					
+					return results;
+					
+//					return xScale(xValue(d));
 				}
 				
 				var idProperty = function idProperty(value) {
@@ -194,15 +198,17 @@ function loadAnalogChart() {
 							.call(yAxis);
 
 					return { yDomain: yDomain, y: y };
+					
 				}
 				
 				var init = function init(selection) {
 					
 					selection.each (function (d) {
 						
-						if ("analog" === d.type) {
+						if ("scatter" === d.type) {							
 							
-							var g = d3.select(this);
+							var g = d3.select(this)
+										.attr("id", d.id);
 							var chartConfig = this.__chart__;
 							var config = null;
 							
@@ -211,9 +217,11 @@ function loadAnalogChart() {
 								if (chartConfig[id]) {
 									
 									config = { yDomain: chartConfig[id].yDomain, y: chartConfig[id].y };
+									
 								} else {
 									
 									config = handleUninitialized(g, d);
+									
 								}
 							} else {
 								
@@ -252,6 +260,21 @@ function loadAnalogChart() {
 										.attr("x", 10)
 										.attr("y", 10);
 									
+									var circleGroup = g.selectAll("circle")
+															.data(d.data)
+														.enter()
+															.append("circle")
+																.attr("cx", function (d) {
+																	
+																		return X(d);
+																	})
+																.attr("cy", function (d) {
+																	
+																		return y(d.Value);
+																	})
+																.attr("class", "dots")
+																.attr("r", layoutConfiguration.scatter.radius)
+																.attr("color", color(d.id + i));
 								}
 							});
 							
@@ -259,13 +282,14 @@ function loadAnalogChart() {
 						}		
 					});
 				};
-				
+
+
 				/**************************************************************************************
 				 * Define a new Giant Oak UI Control to be added to the Controls Global Collection
 			     **************************************************************************************/
-				var ctor = function AnalogChart(instancePrefix, parentPrefix, layout) {
+				var ctor = function ScatterChart(instancePrefix, parentPrefix, layout) {
 			
-						console.log("AnalogChart::AnalogChart called...");
+						console.log("ScatterChart::ScatterChart called...");
 						
 						/**************************************************************************************
 						 * Check that all required the call parameters are defined... 
@@ -274,11 +298,10 @@ function loadAnalogChart() {
 						if (!instancePrefix) {
 						
 							throw new Error("Prefix argument not defined.");
-						}
-						
-						
+						}						
+
 						if (!parentPrefix) {
-						
+							
 							throw new Error("parentPrefix argument not defined.");
 						}
 	
@@ -292,7 +315,10 @@ function loadAnalogChart() {
 						containerPrefix = parentPrefix;
 						
 						layoutConfiguration = layout;
-
+						
+						gap = layoutConfiguration.scatter.gap;
+						height = layoutConfiguration.scatter.chartHeight;
+						
 						return;
 					};
 				var methods = {
@@ -313,11 +339,11 @@ function loadAnalogChart() {
 					
 			}());
 			
-			console.log("AnalogChart::loadAnalogChart loaded declaration.");
+			console.log("ScatterChart::loadScatterChart loaded declaration.");
 			
 		} else {
 			
-			console.log("AnalogChart::loadAnalogChart declaration already loaded.");
+			console.log("ScatterChart::loadScatterChart declaration already loaded.");
 		}
 		
 		return;
@@ -326,4 +352,4 @@ function loadAnalogChart() {
 /*************************************************
  * Explicitly call the Namespace Load function
 *************************************************/
-loadAnalogChart();
+loadScatterChart();

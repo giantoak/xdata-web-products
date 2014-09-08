@@ -57,7 +57,8 @@
 		<script type="text/javascript" src="DigitalChart.js" defer="defer"></script>
 		<script type="text/javascript" src="AnalogChart.js" defer="defer"></script>
 		<script type="text/javascript" src="HorizonChart.js" defer="defer"></script>
-		<script type="text/javascript" src="./sample_data.js" defer="defer"></script>
+		<script type="text/javascript" src="ScatterChart.js" defer="defer"></script>
+		<script type="text/javascript" src="sample_data.js" defer="defer"></script>
 		
 		
 		<script type="text/javascript" >
@@ -104,11 +105,23 @@
 								hiddenOpacity: 1e-6,
 								displayedOpacity: 0.85
 							},
-							defaultChartHeight: 100
+							defaultChartHeight: 100,
+							xAxisXTranslate: function () {
+								
+								return layoutConfiguration.margins.verticalMargins 
+								+ layoutConfiguration.containerProperties.padding;
+ 
+							}
 						},
 						analog: {
 							chartHeight: 100,
 							gap: 30,
+							width: function () {
+								
+								return (layoutConfiguration.containerProperties.width 
+										- (layoutConfiguration.margins.verticalMargins 
+												+ layoutConfiguration.containerProperties.padding));
+							},
 							graphTransform: function () {
 								
 								return layoutConfiguration.margins.verticalMargins 
@@ -117,6 +130,12 @@
 						},
 						digital: {
 							chartHeight: 20,
+							width: function () {
+							
+								return (layoutConfiguration.containerProperties.width 
+										- (layoutConfiguration.margins.left 
+												- layoutConfiguration.containerProperties.padding));
+							},
 							graphTransform: function () {
 								return layoutConfiguration.margins.left 
 											- layoutConfiguration.containerProperties.padding;
@@ -128,10 +147,32 @@
 							range: ["#08519c", "#bdd7e7", "#bad4b3", "#006d2c"],
 							gap: 30,
 							bands: 3,
+							width: function () {
+							
+								return (layoutConfiguration.containerProperties.width 
+										- (layoutConfiguration.margins.left 
+												- layoutConfiguration.containerProperties.padding));
+							},
 							graphTransform: function () {
 								return layoutConfiguration.margins.left 
 											- layoutConfiguration.containerProperties.padding;
 								}
+						},
+						scatter: {
+							chartHeight: 100,
+							radius: 4,
+							gap: 30,
+							width: function () {
+								
+								return (layoutConfiguration.containerProperties.width 
+										- (layoutConfiguration.margins.verticalMargins 
+												+ layoutConfiguration.containerProperties.padding));
+							},
+							graphTransform: function () {
+								
+								return layoutConfiguration.margins.verticalMargins 
+											+ layoutConfiguration.containerProperties.padding;
+							}
 						}
 				};
 				
@@ -149,8 +190,9 @@
 				}
 
 //				control.addGraph({ id: 'Digi', type: 'digital', name: 'Digi', dataId: 513, yVal: ['Value'], data: diData });
-//				control.addGraph({ id: 'Imps', type: 'analog', name: 'RPM', dataId: 513, yVal: ['Value'], data: imps1 });
-				control.addGraph({ id: 'Speeds', type: 'horizon', name: 'Speeds', dataId: 513, yVal: ['Value'], data: speedData });
+				control.addGraph({ id: 'analog', type: 'analog', name: 'Imps-analog', dataId: 513, yVal: ['Value'], data: imps1 });
+//				control.addGraph({ id: 'Speeds', type: 'horizon', name: 'Speeds', dataId: 513, yVal: ['Value'], data: speedData });
+				control.addGraph({ id: 'scatter', type: 'scatter', name: 'Imps-scatter', dataId: 513, yVal: ['Value'], data: imps1 });
 				
 				control.render(control);
 				

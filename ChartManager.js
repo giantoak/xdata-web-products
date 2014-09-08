@@ -219,6 +219,7 @@ function loadChartManager() {
 				
 				var chart = null;
 				var selection = svg.selectAll("g.graph");
+				var width = layoutConfiguration.containerProperties.width;
 				
 				if ("analog" === d.type) {
 				
@@ -227,9 +228,12 @@ function loadChartManager() {
 															(d.id + "_" + graphs.length)), prefix,
 															layoutConfiguration); 
 					
-					chart.id(d.id).height(layoutConfiguration.analog.chartHeight)
+					chart.id(d.id)
+							.height(layoutConfiguration.analog.chartHeight)
 							.gap(layoutConfiguration.analog.gap)
 							.color(color);
+					
+					width = layoutConfiguration.analog.width();
 					
 				} else if ("digital" === d.type) {
 					
@@ -242,11 +246,14 @@ function loadChartManager() {
 					var h = graphHeight(d, layoutConfiguration.digital.chartHeight 
 									+ layoutConfiguration.containerProperties.padding);
 					
-					chart.id(d.id).height(h)
+					chart.id(d.id)
+							.height(h)
 							.color(color)
 							.y(function (t) { 
 									return t.State ? 1 : 0; 
 								});
+					
+					width = layoutConfiguration.digit.width();
 
 				} else if ("horizon" === d.type) {
 					
@@ -258,17 +265,34 @@ function loadChartManager() {
 															(d.id + "_"  + graphs.length)), prefix,
 															layoutConfiguration);
 					
-					chart.id(d.id).width(elementWidth)
-									.height(layoutConfiguration.horizon.chartHeight)
-									.gap(layoutConfiguration.horizon.gap)
-									.y(function (t) { 
-											return t.Value - mean; 
-										})
-									.bands(layoutConfiguration.horizon.bands)
-									.mode("offset");
+					chart.id(d.id)
+							.height(layoutConfiguration.horizon.chartHeight)
+							.gap(layoutConfiguration.horizon.gap)
+							.y(function (t) { 
+									return t.Value - mean; 
+								})
+							.bands(layoutConfiguration.horizon.bands)
+							.mode("offset");
+					
+					width = layoutConfiguration.horizon.width();
+					
+				} else if ("scatter" === d.type) {
+					
+					chart = new GoChartControls.ScatterChart(
+												GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+														(d.id + "_"  + graphs.length)), prefix,
+														layoutConfiguration);
+					
+					chart.id(d.id)
+							.height(layoutConfiguration.scatter.chartHeight)
+							.gap(layoutConfiguration.scatter.gap)
+							.color(color);
+					
+					width = layoutConfiguration.scatter.width();
 				}
 				
 				if (chart) {
+					
 					
 					chart.timeScale(xScale).x(function (t) { 
 							return (new Date(t.DateTime)).getTime(); 
@@ -348,7 +372,7 @@ function loadChartManager() {
 														+ layoutConfiguration.margins.top 
 														+ ")");
 					
-					xScale = d3.time.scale().range(new Array(0, layoutConfiguration.containerProperties.width));
+					xScale = d3.time.scale().range(new Array(0, layoutConfiguration.graphRegion.width));
 					
 					hoverLine = chartCanvas.append("svg:line")
 											.attr("class", "hover-line")
@@ -363,8 +387,7 @@ function loadChartManager() {
 					chartCanvas.append("g")
 									.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "xAxis"))
 									.attr("transform", "translate(" 
-															+ (layoutConfiguration.margins.left 
-																	- layoutConfiguration.containerProperties.padding)
+															+ layoutConfiguration.graphRegion.xAxisXTranslate()
 															+ ", "
 															+ (layoutConfiguration.margins.top * 1.5) 
 															+ ")")
@@ -734,6 +757,9 @@ function loadChartManager() {
 												} else if ("horizon" === d.type) {
 													
 													tx = layoutConfiguration.horizon.graphTransform();
+												} else if ("scatter" === d.type) {
+													
+													tx = layoutConfiguration.scatter.graphTransform();
 												}
 												
 
