@@ -50,7 +50,7 @@
 	</head>
 	<body>
 	
-		<div id="testContainer" style="padding: 2px; margin: 2px; border: 1px solid black; background-color: beige; "></div>
+		<div id="testContainer" style="padding: 2px; margin: 2px; border: none; background-color: white; "></div>
 		
 		<script type="text/javascript" src="Utilities.js" defer="defer"></script>
 		<script type="text/javascript" src="ChartManager.js" defer="defer"></script>
@@ -76,7 +76,7 @@
 							left: 20,
 							width: 900,
 							height: 300,
-							borders: "1px solid black",
+							borders: "none",
 							backgroundColor: "white",
 							padding: 5,
 							margins: 5
@@ -190,7 +190,7 @@
 				}
 
 //				control.addGraph({ id: 'Digi', type: 'digital', name: 'Digi', dataId: 513, yVal: ['Value'], data: diData });
-				control.addGraph({ id: 'analog', type: 'analog', name: 'Imps-analog', dataId: 513, yVal: ['Value'], data: imps1 });
+// 				control.addGraph({ id: 'analog', type: 'analog', name: 'Imps-analog', dataId: 513, yVal: ['Value'], data: imps1 });
 //				control.addGraph({ id: 'Speeds', type: 'horizon', name: 'Speeds', dataId: 513, yVal: ['Value'], data: speedData });
 				control.addGraph({ id: 'scatter', type: 'scatter', name: 'Imps-scatter', dataId: 513, yVal: ['Value'], data: imps1 });
 				

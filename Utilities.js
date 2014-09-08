@@ -260,22 +260,22 @@ function loadUtilitiesModule() {
 				return;
 			};
 			
-			var findIndexByKeyValue = function findIndexByKeyValue(obj, key, value){
+			var findIndexByKeyValue = function findIndexByKeyValue(obj, key, value, comparer){
 	                for (var i = 0; i < obj.length; i++) {
-	                    if (obj[i][key] == value) {
+	                    if (comparer(obj[i][key], value)) {
 	                        return i;
 	                    }
 	                }
 	                return null;
 	            };
 	            
-	        var findSortedInsertionPointWithKey = function findSortedInsertionPointWithKey(obj, key, value) {
+	        var findSortedInsertionPointWithKey = function findSortedInsertionPointWithKey(obj, key, value, comparer) {
 	        	
 	        	var results = null;
 	        	
 	        	for (var i = 0; i < obj.length; i++) {
 	        		
-	        		if (obj[i][key] > value) {
+	        		if (comparer(obj[i][key], value)) {
 	        			
 	        			results = i;
 	        			break;

@@ -214,9 +214,9 @@ function loadScatterChart() {
 							
 							if (chartConfig) {
 								
-								if (chartConfig[id]) {
+								if (chartConfig[d.id]) {
 									
-									config = { yDomain: chartConfig[id].yDomain, y: chartConfig[id].y };
+									config = { yDomain: chartConfig[d.id].yDomain, y: chartConfig[d.id].y };
 									
 								} else {
 									
@@ -234,6 +234,7 @@ function loadScatterChart() {
 							
 							d.yVal.forEach(function (c, i) {
 								
+								var circleGroup = null;
 								var valueLine = d3.svg.line()
 													.x(X)
 													.y(function (a) { 
@@ -242,25 +243,35 @@ function loadScatterChart() {
 								
 								if (chartConfig) {
 								
-									g.select(".path." + c).transition()
-											.duration(layoutConfiguration.graphRegion.duration)
-												.attr("d", valueLine(d.data));
+//									g.select(".path." + c).transition()
+//											.duration(layoutConfiguration.graphRegion.duration)
+//												.attr("d", valueLine(d.data));
 									
+									circleGroup = g.selectAll("circle").transition()
+														.duration(layoutConfiguration.graphRegion.duration)
+															.attr("cx", function (d) {
+																
+																	return X(d);
+																})
+															.attr("cy", function (d) {
+																
+																	return y(d.Value);
+																});
 								} else {
 									
-									g.append("path")
-										.attr("class", "path " + c)
-										.attr("d", valueLine(d.data))
-										.attr("clip-path", "url(" + GoUtilities.GenerateIdentifierSelector(
-												GoUtilities.GenerateComponentSpecificIdentifiers(containerPrefix, "chart")) + ")")
-										.style("stroke", color(d.id + i));
-									
+//									g.append("path")
+//										.attr("class", "path " + c)
+//										.attr("d", valueLine(d.data))
+//										.attr("clip-path", "url(" + GoUtilities.GenerateIdentifierSelector(
+//												GoUtilities.GenerateComponentSpecificIdentifiers(containerPrefix, "chart")) + ")")
+//										.style("stroke", color(d.id + i));
+//									
 									g.append("text").text(d.name)
 										.attr("class", "legend")
 										.attr("x", 10)
 										.attr("y", 10);
 									
-									var circleGroup = g.selectAll("circle")
+									circleGroup = g.selectAll("circle")
 															.data(d.data)
 														.enter()
 															.append("circle")

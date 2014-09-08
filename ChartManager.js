@@ -162,7 +162,9 @@ function loadChartManager() {
 					
 							var dt = xScale.invert(mX);
 							var mapped = graphs.map(function mapper(element, index, arr) {
-								var results = element.map[mX] ? element.map[dX].date : null;
+								var results = element.map[mX] 
+										? element.map[mX].date 
+												: null;
 								
 								return results;
 							});
@@ -170,7 +172,8 @@ function loadChartManager() {
 							var graphIdsWithDataAtNearestDate = graphs.filter(function filter(element, index, arr) {
 								
 								var results = null;
-								var flag = (element.map[mX] && (element.map[mX].date == nearestDateValue));
+								var flag = (element.map[mX] 
+												&& (element.map[mX].date == nearestDateValue));
 								
 								if (flag) {
 									
@@ -297,10 +300,10 @@ function loadChartManager() {
 					chart.timeScale(xScale).x(function (t) { 
 							return (new Date(t.DateTime)).getTime(); 
 						});
-					chart.initialize(selection);
+//					chart.initialize(selection);
 				}
 				
-				return chart;
+				return chart.initialize;
 			}
 			
 			function graphHeight(d, height) {
@@ -372,7 +375,7 @@ function loadChartManager() {
 														+ layoutConfiguration.margins.top 
 														+ ")");
 					
-					xScale = d3.time.scale().range(new Array(0, layoutConfiguration.graphRegion.width));
+					xScale = d3.time.scale().range(new Array(0, elementWidth));
 					
 					hoverLine = chartCanvas.append("svg:line")
 											.attr("class", "hover-line")
@@ -457,6 +460,14 @@ function loadChartManager() {
 					return;
 				}
 				
+				var dateComparer = function (a, b) {
+					
+					var aValue = (new Date(a)).getTime();
+					var bValue = (new Date(b)).getTime();
+					
+					return (aValue  > bValue);
+				};
+				
 				function getLookupMap(graph, scaling) {
 					
 					console.log("ChartManager::getLookupMap called...");
@@ -464,21 +475,22 @@ function loadChartManager() {
 					var cursorIndex = 0;
 					var map = new Array();
 					var startIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, 
-													"DateTime", scaling.domain()[0]);  // Determine last index where graph's data's order property is less than scaling.domain[0]
+													"DateTime", scaling.domain()[0], dateComparer);  // Determine last index where graph's data's order property is less than scaling.domain[0]
 					var endIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, 
-													"DateTime", scaling.domain()[1]); // Determine last index where graph's data's order property is less than scaling.domain[1]
+													"DateTime", scaling.domain()[1], dateComparer); // Determine last index where graph's data's order property is less than scaling.domain[1]
 					
 					var data = graph.data.splice(startIndex, endIndex);
 					var dates = data.map(function(element) {
 									
-									return (new Date(d.DateTime)).getTime(); 
+									return { DateTime: (new Date(element.DateTime)).getTime()}; 
 								});
 
 					d3.range(layoutConfiguration.graphRegion.width).forEach(function(px) {
 						
 						var dt = scaling.invert(px);
 						var dataIndex = cursorIndex + (GoUtilities.FindSortedInsertionPointWithKey(
-																	dates.slice(cursorIndex), "DateTime", dt) || 0);
+																	dates.slice(cursorIndex), "DateTime", 
+																	dt, dateComparer) || 0);
 						
 						if (dataIndex < data.length) {
 							
@@ -551,30 +563,35 @@ function loadChartManager() {
 						graph.map = getLookupMap(graph, xScale);
 					}
 					
-					var zoomScale = d3.time.scale().range([0, elementWidth]).domain(xDomain);
+					var zoomScale = d3.time.scale().range([0, elementWidth]).domain(xScale.domain());
 					var brush = d3.svg.brush()
 									.x(zoomScale)
 									.on('brushend', function () {
 										
 										xScale.domain(brush.empty() ? xDomain : brush.extent());
 										
-										d3.select(GoUtilities
-														.GenerateClassSelector(
-																GoUtilities
-																	.GenerateComponentSpecificIdentifiers(prefix, 
-																			"loader")))
-											.attr("display", "block");
-										
+//										d3.select(GoUtilities
+//														.GenerateClassSelector(
+//																GoUtilities
+//																	.GenerateComponentSpecificIdentifiers(prefix, 
+//																			"loader")))
+//											.attr("display", "block");
+//										
+//										d3.selectAll(".dots").transition(layoutConfiguration.graphRegion.duration)
+//													.attr("cx", function (d) {
+//														
+//														return X(d);
+//													});
 										zoomAsynchronously(function () {
 											
 											render();
-											d3.select(GoUtilities
-													.GenerateClassSelector(
-															GoUtilities
-																.GenerateComponentSpecificIdentifiers(prefix, 
-																		"loader")))
-												.attr("display", "none");
-									
+//											d3.select(GoUtilities
+//													.GenerateClassSelector(
+//															GoUtilities
+//																.GenerateComponentSpecificIdentifiers(prefix, 
+//																		"loader")))
+//												.attr("display", "none");
+//									
 											return;
 										});
 									});
@@ -635,7 +652,7 @@ function loadChartManager() {
 							
 							if (0 <= reorderedPosition) {
 								
-								var prv = GoUtilities.FindIndexByKeyValue(graphs, "order", reorderedPosition);
+								var prv = GoUtilities.FindIndexByKeyValue(graphs, "order", reorderedPosition, dateComparer);
 								
 								// This conditional may be optional.  It depends on if the order value is 
 								// correctly maintained with each add/remove call...
@@ -654,7 +671,7 @@ function loadChartManager() {
 							// See comment in the 'up' direction handler conditional.
 							if (reorderedPosition < graphs.length) {
 							
-								var nt = GoUtilities.FindIndexByKeyValue(graphs, "order", reorderedPosition);
+								var nt = GoUtilities.FindIndexByKeyValue(graphs, "order", reorderedPosition, dateComparer);
 								
 								if (null != nt) {
 									
@@ -717,6 +734,9 @@ function loadChartManager() {
 												} else if ("horizon" === d.type) {
 													
 													tx = layoutConfiguration.horizon.graphTransform();
+												} else if ("scatter" === d.type) {
+													
+													tx = layoutConfiguration.scatter.graphTransform();
 												}
 												
 												var ty = layoutConfiguration.margins.horizontalMargins 
@@ -782,7 +802,7 @@ function loadChartManager() {
 
 							d3.select(this).call(function () { 
 								
-								selectChart(d); 
+								selectChart(d)(this); 
 	
 								return;
 							}); 

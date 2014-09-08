@@ -244,7 +244,7 @@ function loadAnalogChart() {
 										.attr("class", "path " + c)
 										.attr("d", valueLine(d.data))
 										.attr("clip-path", "url(" + GoUtilities.GenerateIdentifierSelector(
-												GoUtilities.GenerateComponentSpecificIdentifiers(containerPrefix, "chart")) + ")")
+												GoUtilities.GenerateComponentSpecificIdentifiers(containerPrefix, "clip")) + ")")
 										.style("stroke", color(d.id + i));
 									
 									g.append("text").text(d.name)
@@ -296,8 +296,7 @@ function loadAnalogChart() {
 						return;
 					};
 				var methods = {
-						id: idProperty,
-						color: colors,
+						id: idProperty,						color: colors,
 						x: xProperty,
 						height: heightProperty,
 						gap: gapProperty,

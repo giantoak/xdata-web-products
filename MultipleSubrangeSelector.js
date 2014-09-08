@@ -110,6 +110,10 @@ function loadMultipleSubrangeSelector() {
 			 * TODO: Create a better algorithm for figuring out unique identifiers 
 			 *		 for the new subrange.  Also, consider moving to Utilities namespace.
 			 ************************************************************************/
+			
+			var idComparer = function (a, b) {
+				return a == b;
+			};
 
 			function createNewUniqueId(candidateId, len, selectorPrefix, idPrefix) {
 				
@@ -1422,7 +1426,7 @@ function loadMultipleSubrangeSelector() {
 								
 								var selected = d3.select(convertIdToIdSelector("rangeEditorOptions")).node().value;
 								
-								var index = GoUtilities.FindIndexByKeyValue(rectangles, "id", selected);
+								var index = GoUtilities.FindIndexByKeyValue(rectangles, "id", selected, idComparer);
 								
 								if (-1 != index) {
 								
@@ -1496,7 +1500,7 @@ function loadMultipleSubrangeSelector() {
 							
 							var selected = d3.select(convertIdToIdSelector("eventEditorOptions")).node().value;
 							
-							var index = GoUtilities.FindIndexByKeyValue(events, "id", selected);
+							var index = GoUtilities.FindIndexByKeyValue(events, "id", selected, idComparer);
 							
 							if (-1 != index) {
 							
