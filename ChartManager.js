@@ -77,11 +77,11 @@ function loadChartManager() {
 				var timeLegend = null;
 				var brush = null;
 				
-				var chartClickedEventManagement = new GoAstractControls.EventHandlerManagement();
+				var chartClickedEventManagement = new GoAbstractControls.EventHandlerManagement();
 				
 				var addChartClickedEventHandler = function addChartClickEventHandler(handler) {
 					
-					chartClickedEventManagement.addHandler(hander);
+					chartClickedEventManagement.addHandler(handler);
 					
 					return;
 				};
@@ -97,7 +97,13 @@ function loadChartManager() {
 					
 					console.log("ChartManager::chartClickHandler called...");
 					
-					positionPlayHead(true);
+					var actualActivePlayHead = activePlayHead;
+					
+					activePlayHead = true;
+					
+					positionPlayHead(this, true);
+					
+					activePlayHead = actualActivePlayHead;
 					
 					return;
 				};
@@ -159,10 +165,14 @@ function loadChartManager() {
 					var distance = Number.POSITIVE_INFINITY;
 					
 					dates.forEach(function (d) {
+
+						var dtValue = dt.getTime();
+						var dValue = (new Date(d)).getTime();
+						var newDistance = Math.abs(dValue-dtValue);
 						
-						if (distance > Math.abs(d-dt)) {
+						if (distance > newDistance) {
 							
-							distance = Math.abs(d-dt);
+							distance = newDistance;
 							results = d;
 						}
 					});
@@ -170,11 +180,13 @@ function loadChartManager() {
 					return results;
 				}
 				
-				function positionPlayHead(triggerEvent) {
+				function positionPlayHead(container, triggerEvent) {
+					
+					console.log("ChartManager::positionPlayHead(" + triggerEvent + ", " + activePlayHead + ")");
 					
 					if (activePlayHead) {
 						
-						var mouse = d3.mouse(this);
+						var mouse = d3.mouse(container);
 						
 						var mX = mouse[0];
 						var mY = mouse[1];
@@ -187,6 +199,7 @@ function loadChartManager() {
 					
 							var dt = xScale.invert(mX);
 							var mapped = graphs.map(function mapper(element, index, arr) {
+								
 								var results = element.map[mX] 
 										? element.map[mX].date 
 												: null;
@@ -194,18 +207,17 @@ function loadChartManager() {
 								return results;
 							});
 							var nearestDateValue = minDistanceDate(mapped, dt);
-							var graphIdsWithDataAtNearestDate = graphs.filter(function filter(element, index, arr) {
+							var graphIdsWithDataAtNearestDate = graphs.filter(function filter(element, index) {
 								
-								var results = null;
-								var flag = (element.map[mX] 
-												&& (element.map[mX].date == nearestDateValue));
+								var mappedData = element.map[mX];
+								var flag = (mappedData 
+												&& (mappedData.date == nearestDateValue));
+								return flag;
+							}).map(function map(filteredData, index) {
 								
-								if (flag) {
-									
-									results = element.map[mX].id;
-								}
+								var mappedData = filteredData.map[mX]; 
 								
-								return results;
+								return mappedData.idx;
 							});
 							
 							if (null != nearestDateValue) {
@@ -230,16 +242,23 @@ function loadChartManager() {
 									
 									g.select('.legend').text(d.id + " : " + str);
 								});
-								
-								timeLegend.text(nearestDateValue.getDate() + " " + monthNames[nearestDateValue.getMonth()]);
+
+								var ndv = new Date(nearestDateValue);
+								var date = ndv.getDate();
+								var month = ndv.getMonth();
+								timeLegend.text(date + " " + monthNames[month]);
 								hoverLine.attr("x1", mX).attr("x2",mX);
 								
-								if (triggerEvent) {
-									
-									chartClickedEventManagement.fireHandlers(component, mX, graphIdsWithDataAtNearestDate);
-								}
-							}						
-							
+							} else {
+								
+								console.log("No 'Nearest Date Value' found...");
+							}
+						
+							if (triggerEvent) {
+								
+								chartClickedEventManagement.fireHandlers(component, mX, graphIdsWithDataAtNearestDate);
+							}
+
 						} else {
 							// Off the chart...
 						}
@@ -254,7 +273,7 @@ function loadChartManager() {
 					
 					console.log("ChartManager::chartMouseMoveHandler called...");
 					
-					positionPlayHaed(false);
+					positionPlayHead(this, false);
 					
 					return;
 				};
@@ -518,19 +537,31 @@ function loadChartManager() {
 													"DateTime", scaling.domain()[0], dateComparer);  // Determine last index where graph's data's order property is less than scaling.domain[0]
 					var endIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, 
 													"DateTime", scaling.domain()[1], dateComparer); // Determine last index where graph's data's order property is less than scaling.domain[1]
+
+					var data = null;
+					if (endIndex) {
+						
+						data = graph.data.splice(0, endIndex).splice(startIndex);
+						
+					} else {
+						
+						data = graph.data.splice(startIndex);
+					}
 					
-					var data = graph.data.splice(startIndex, endIndex);
+					graph.data = data;
+					
 					var dates = data.map(function(element) {
 									
 									return { DateTime: (new Date(element.DateTime)).getTime()}; 
 								});
-
+					
 					d3.range(layoutConfiguration.graphRegion.width).forEach(function(px) {
 						
 						var dt = scaling.invert(px);
-						var dataIndex = cursorIndex + (GoUtilities.FindSortedInsertionPointWithKey(
-																	dates.slice(cursorIndex), "DateTime", 
-																	dt, dateComparer) || 0);
+						var foundIndex = (GoUtilities.FindSortedInsertionPointWithKey(
+												dates.slice(cursorIndex), "DateTime", 
+												dt, dateComparer) || 0);
+						var dataIndex = cursorIndex + foundIndex;
 						
 						if (dataIndex < data.length) {
 							
@@ -551,6 +582,7 @@ function loadChartManager() {
 						
 						return;
 					});
+					
 					
 					return map;
 				};
@@ -603,6 +635,7 @@ function loadChartManager() {
 						graph.map = getLookupMap(graph, xScale);
 					}
 					
+
 					var zoomScale = d3.time.scale().range([0, elementWidth]).domain(xScale.domain());
 					brush = d3.svg.brush()
 									.x(zoomScale)

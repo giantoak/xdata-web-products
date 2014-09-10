@@ -179,6 +179,24 @@
 				var cm = GoControls.TimeSeriesCharts.ChartManager;
 				var control = new cm("CM", "#testContainer", layoutConfiguration);
 				
+				var clickHandler = function tscClicked(sender, x, graphIds) {
+					
+					console.log("TimeSeriesChart.html::ready::tscClicked called...");
+					
+					var txt = "User clicked at: x = " + x + ", which is near graph(s) ";
+			
+					for (var i = 0; i < graphIds.length; i++) {
+						
+						txt += graphIds[i] + ", "
+					}
+					
+					console.log(txt);
+					
+					return;
+				}
+				
+				control.AddChartClickedEventHandler(clickHandler);
+				
 				for (var prop in control) {
 					
 					console.log("control." + prop);
