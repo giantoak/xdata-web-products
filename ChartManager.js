@@ -74,6 +74,33 @@ function loadChartManager() {
 				var logChartHeight = 100;
 				var diChartHeight = 20;
 				var color = d3.scale.category10();
+				var timeLegend = null;
+				var brush = null;
+				
+				var chartClickedEventManagement = new GoAstractControls.EventHandlerManagement();
+				
+				var addChartClickedEventHandler = function addChartClickEventHandler(handler) {
+					
+					chartClickedEventManagement.addHandler(hander);
+					
+					return;
+				};
+				
+				var removeChartClickeEventHandler = function removeChartClickedEventHandler(handler) {
+					
+					chartClickedEventManagement.removeHandler(handler);
+					
+					return;
+				};
+				
+				var chartClickHandler = function chartClickHandler(d) {
+					
+					console.log("ChartManager::chartClickHandler called...");
+					
+					positionPlayHead(true);
+					
+					return;
+				};
 				
 				var chartMouseHoverHandler = function chartMouseHoverHandler() {
 					
@@ -143,9 +170,7 @@ function loadChartManager() {
 					return results;
 				}
 				
-				var chartMouseMoveHandler = function chartMouseMoveHandler() {
-					
-					console.log("ChartManager::chartMouseMoveHandler called...");
+				function positionPlayHead(triggerEvent) {
 					
 					if (activePlayHead) {
 						
@@ -208,12 +233,28 @@ function loadChartManager() {
 								
 								timeLegend.text(nearestDateValue.getDate() + " " + monthNames[nearestDateValue.getMonth()]);
 								hoverLine.attr("x1", mX).attr("x2",mX);
+								
+								if (triggerEvent) {
+									
+									chartClickedEventManagement.fireHandlers(component, mX, graphIdsWithDataAtNearestDate);
+								}
 							}						
 							
 						} else {
-							
+							// Off the chart...
 						}
+					} else {
+						// Play head not active... (most likely no charts
 					}
+					
+					return;
+				}
+				
+				var chartMouseMoveHandler = function chartMouseMoveHandler() {
+					
+					console.log("ChartManager::chartMouseMoveHandler called...");
+					
+					positionPlayHaed(false);
 					
 					return;
 				};
@@ -221,7 +262,6 @@ function loadChartManager() {
 			function selectChart(d) {
 				
 				var chart = null;
-				var selection = svg.selectAll("g.graph");
 				var width = layoutConfiguration.containerProperties.width;
 				
 				if ("analog" === d.type) {
@@ -300,7 +340,6 @@ function loadChartManager() {
 					chart.timeScale(xScale).x(function (t) { 
 							return (new Date(t.DateTime)).getTime(); 
 						});
-//					chart.initialize(selection);
 				}
 				
 				return chart.initialize;
@@ -401,7 +440,7 @@ function loadChartManager() {
 							.append("g")
 								.attr("class", "x axis");
 					
-					var timeLegend = chartCanvas.append("text")
+					timeLegend = chartCanvas.append("text")
 											.attr("class", "legend-time")
 											.attr("x",  (layoutConfiguration.graphRegion.width 
 															+ layoutConfiguration.margins.verticalMargins))
@@ -411,7 +450,8 @@ function loadChartManager() {
 
 					svg.on("mouseover", chartMouseHoverHandler)
 							.on("mouseout", chartMouseOutHandler)
-							.on("mousemove", chartMouseMoveHandler);
+							.on("mousemove", chartMouseMoveHandler)
+							.on("click", chartClickHandler);
 
 					return;
 				};
@@ -564,34 +604,15 @@ function loadChartManager() {
 					}
 					
 					var zoomScale = d3.time.scale().range([0, elementWidth]).domain(xScale.domain());
-					var brush = d3.svg.brush()
+					brush = d3.svg.brush()
 									.x(zoomScale)
 									.on('brushend', function () {
 										
 										xScale.domain(brush.empty() ? xDomain : brush.extent());
 										
-//										d3.select(GoUtilities
-//														.GenerateClassSelector(
-//																GoUtilities
-//																	.GenerateComponentSpecificIdentifiers(prefix, 
-//																			"loader")))
-//											.attr("display", "block");
-//										
-//										d3.selectAll(".dots").transition(layoutConfiguration.graphRegion.duration)
-//													.attr("cx", function (d) {
-//														
-//														return X(d);
-//													});
 										zoomAsynchronously(function () {
 											
 											render();
-//											d3.select(GoUtilities
-//													.GenerateClassSelector(
-//															GoUtilities
-//																.GenerateComponentSpecificIdentifiers(prefix, 
-//																		"loader")))
-//												.attr("display", "none");
-//									
 											return;
 										});
 									});
@@ -851,7 +872,9 @@ function loadChartManager() {
 						addGraph: addGraph,
 						removeGraph: removeGraph,
 						reorderGraph: reorderGraph,
-						render: render
+						render: render,
+						AddChartClickedEventHandler: addChartClickedEventHandler,
+						RemoveChartClickeEventHandler: removeChartClickeEventHandler
 				};
 				var statics = {};
 				
