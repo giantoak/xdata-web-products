@@ -102,6 +102,7 @@ function loadMultipleSubrangeSelector() {
 			
 			function convertSeriesOffsetToCoordinate(offset) {
 				
+//				return timeSeriesScale(offset) - layoutConfiguration.margins.left;
 				return timeSeriesScale(offset);
 			}
 			
@@ -139,7 +140,9 @@ function loadMultipleSubrangeSelector() {
 						"height": layoutConfiguration.rangeBrush.height,
 						"atOffset": convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left),
 						"id": GoUtilities.GenerateComponentSpecificIdentifiers(prefix, ("rect_" + rectangles.length)),
-						"onPositionUpdated": new GoAbstractControls.EventHandlerManagement() 
+						"onPositionUpdated": new GoAbstractControls.EventHandlerManagement(),
+						startOffset: convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left),
+						endOffset: convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left + layoutConfiguration.rangeBrush.width)
 					};
 				
 				var len = rectangles.length;
@@ -170,13 +173,16 @@ function loadMultipleSubrangeSelector() {
 			
 			var moveRange = function moveRange(d, range, event) {
 				
+//				var x = event.x  - layoutConfiguration.margins.left;
 				var x = event.x;
 				var y = 0;
 				
 				var transform = "translate(" + x + ", " + y + ")";
 				
-				d.atOffset = convertCoordinatesToSeriesOffset(x - layoutConfiguration.margins.left);
+				d.atOffset = convertCoordinatesToSeriesOffset(x);
 				d.transform = transform;
+				d.startOffset = d.atOffset;
+				d.endOffset = convertCoordinatesToSeriesOffset(x+d.width);
 				
 				range.attr("transform", transform);
 				
@@ -191,7 +197,8 @@ function loadMultipleSubrangeSelector() {
 				
 				toolTip.select(convertIdToIdSelector("rangeToolTip")).text(d.id);
 				
-				var x = d.x - layoutConfiguration.margins.left;
+//				var x = d.x - layoutConfiguration.margins.left;
+				var x = d.x;
 				var width = x + d.width;
 				var endValue = convertCoordinatesToSeriesOffset(width);
 				
@@ -297,7 +304,11 @@ function loadMultipleSubrangeSelector() {
 					
 					d.x = updatedX;
 					
-					d.atOffset = convertCoordinatesToSeriesOffset(d.x - layoutConfiguration.margins.left);
+//					d.atOffset = convertCoordinatesToSeriesOffset(d.x - layoutConfiguration.margins.left);
+					d.atOffset = convertCoordinatesToSeriesOffset(d.x);
+					d.startOffset = d.atOffset;
+					d.endOffset = convertCoordinatesToSeriesOffset(d.x+d.width);
+
 					
 					updatedData = true;
 				}
@@ -306,6 +317,9 @@ function loadMultipleSubrangeSelector() {
 						!= layoutConfiguration.updateMenu.valueFormatter(updatedWidth, layoutConfiguration.updateMenu.formatPrecision)) {
 					
 					d.width = updatedWidth;
+					d.startOffset = d.atOffset;
+					d.endOffset = convertCoordinatesToSeriesOffset(d.x+d.width);
+
 					
 					updatedData = true;
 				}
@@ -647,8 +661,8 @@ function loadMultipleSubrangeSelector() {
 									.origin(function(d) {
 											var t = d3.select(this);
 											var point = {
-													x: t.attr("x") + d3.transform(t.attr("transform")).translate[0],
-													y: t.attr("y") + d3.transform(t.attr("transform")).translate[1]
+													x: (t.attr("x") + d3.transform(t.attr("transform")).translate[0]),
+													y: (t.attr("y") + d3.transform(t.attr("transform")).translate[1])
 											};
 											
 											d.originalWidth = d.width;
@@ -669,7 +683,8 @@ function loadMultipleSubrangeSelector() {
 											var range = d3.select(convertIdToIdSelector("rangeSelections_" + d.id));
 											moveRange(d, range, d.originPoint);
 											
-											d.atOffset = convertCoordinatesToSeriesOffset(d.x - layoutConfiguration.margins.left);
+											d.atOffset = convertCoordinatesToSeriesOffset(d.x);
+//											d.atOffset = convertCoordinatesToSeriesOffset(d.x - layoutConfiguration.margins.left);
 											fixToolTipMessage(d);
 											
 											return;
@@ -679,11 +694,14 @@ function loadMultipleSubrangeSelector() {
 										var t = d3.select(this);
 										
 										t.attr("resizing", false);
+				
+										d3.selectAll(convertIdToIdSelector("wr_"+d.id))
+													.attr("fill", layoutConfiguration.rangeBrush.rangeColor)
+													.attr("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity);
 										
-										d3.selectAll("#wr_"+d.id).style("fill", layoutConfiguration.rangeBrush.rangeColor)
-														.style("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity);
-										d3.selectAll("#er_"+d.id).style("fill", layoutConfiguration.rangeBrush.rangeColor)
-														.style("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity);
+										d3.selectAll(convertIdToIdSelector("er_"+d.id))
+													.attr("fill", layoutConfiguration.rangeBrush.rangeColor)
+													.attr("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity);
 										
 										toolTip.transition()
 													.duration(layoutConfiguration.toolTip.outDuration)
@@ -723,7 +741,7 @@ function loadMultipleSubrangeSelector() {
 				events.forEach(function(element, index, array) {
 					
 					var localArray = new Array();
-					localArray.push(element);0
+					localArray.push(element);
 					
 					d3.select(convertIdToIdSelector("eventMarkers_" + element.id))
 						.selectAll("line").data(localArray)
@@ -782,11 +800,17 @@ function loadMultipleSubrangeSelector() {
 								.attr("fill", "none")
 								.attr("width", function (d) {
 									
-										return (layoutConfiguration.eventLabels.height/3);
+										var results = (layoutConfiguration.eventLabels.height/3) + "px";
+										
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);									
+										return results;
 									})
 								.attr("height", function (d) {
+									
+										var results = (layoutConfiguration.eventLabels.height/3) + "px";
 										
-										return (layoutConfiguration.eventLabels.height/3);
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
 									})
 								.on("mouseover", function (d) {
 										
@@ -796,7 +820,11 @@ function loadMultipleSubrangeSelector() {
 										 * TODO: Rethink the HTML method.
 										 ************************************************/
 										d3.select(convertIdToIdSelector("eventLabel"))
-											.style("display", "block")
+											.style("display", function (d) {
+													var results = "block";
+													
+													return results;
+												})
 											.style("left", function (d) {
 	
 													
@@ -906,22 +934,26 @@ function loadMultipleSubrangeSelector() {
 												return layoutConfiguration.margins.top; 
 											})
 										.attr("width", function (d) { 
-												return layoutConfiguration.rangeBrush.resizeHandleWidth; 
+												var results = layoutConfiguration.rangeBrush.resizeHandleWidth + "px";
+//												console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);												
+												return results; 
 											})
 										.attr("height", function (d) { 
-												return d.height; 
+												var results = d.height + "px";
+//												console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+												return results;
 											})
-										.style("fill", layoutConfiguration.rangeBrush.rangeColor)
-										.style("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity)	            											
+										.attr("fill", layoutConfiguration.rangeBrush.rangeColor)
+										.attr("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity)	            											
 										.style("cursor", "ew-resize")
 										.on("mousedown", function(d) {
 												var t = d3.select(convertIdToIdSelector("rangeSelections_" + element.id));
 												
 												t.attr("resizing", true);
 												
-												d3.select(this).style("fill", 
+												d3.select(this).attr("fill", 
 																		layoutConfiguration.rangeBrush.activeResizeHandlerColor)
-																.style("fill-opacity", 
+																.attr("fill-opacity", 
 																		layoutConfiguration.rangeBrush.activeResizeOpacity);
 												
 												d.resize = function(originX, delta) {
@@ -934,10 +966,18 @@ function loadMultipleSubrangeSelector() {
 													var resizedWidth = d.resize(d.originalWidth, (event.x - d.originPoint.x));
 													
 													d.width = (( layoutConfiguration.rangeBrush.minimumRangeWidth < resizedWidth ) 
-																		? resizedWidth : layoutConfiguration.rangeBrush.minimumRangeWidth);
+																		? resizedWidth 
+																			: layoutConfiguration.rangeBrush.minimumRangeWidth);
 													
-													d3.select(convertIdToIdSelector("block_" + d.id)).attr("width", d.width);
-													var eastResizeContainer = d3.select("#er_" + d.id).node().parentNode;
+													d3.select(convertIdToIdSelector("block_" + d.id))
+																	.attr("width", function (a) {
+																		var results = d.width + "px";
+//																		console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+																		return results;
+																	});
+													
+													var eastResizeContainer = d3.select(convertIdToIdSelector(
+																				"er_" + d.id)).node().parentNode;
 													d3.select(eastResizeContainer).attr("transform", "translate(" 
 																				+ (d.width 
 																					+ layoutConfiguration.rangeBrush.resizeHandleWidth) 
@@ -950,6 +990,15 @@ function loadMultipleSubrangeSelector() {
 												
 												return;
 												
+											})
+										.on("mouseup", function(d){
+											
+											d3.select(this).attr("fill", 
+													layoutConfiguration.rangeBrush.rangeColor)
+											.attr("fill-opacity", 
+													layoutConfiguration.rangeBrush.rangeOpacity);
+							
+												return;
 											});
 				
 			
@@ -975,13 +1024,17 @@ function loadMultipleSubrangeSelector() {
 			    													return layoutConfiguration.margins.top; 
 			    												})
 			    											.attr("width", function (d) { 
-			    													return d.width; 
+			    													var results = d.width + "px";
+//			    													console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+			    													return results;
 			    												})
 			    											.attr("height", function (d) { 
-			    													return d.height; 
+			    													var results = d.height + "px";
+//			    													console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+			    													return results; 
 			    												})
-			    											.style("fill", layoutConfiguration.rangeBrush.rangeColor)
-			    											.style("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity)
+			    											.attr("fill", layoutConfiguration.rangeBrush.rangeColor)
+			    											.attr("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity)
 			    											.style("cursor", "move")
 			    											.on("dblclick", function(d) {
 			        												console.log("Rect#block>dblclick("+ this.id + ") called....");
@@ -1034,13 +1087,17 @@ function loadMultipleSubrangeSelector() {
 																	return layoutConfiguration.margins.top; 
 																})
 															.attr("width", function (d) { 
-																	return layoutConfiguration.rangeBrush.resizeHandleWidth; 
+																	var results = layoutConfiguration.rangeBrush.resizeHandleWidth + "px";
+//																	console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+																	return results; 
 																})
 															.attr("height", function (d) { 
-																	return d.height; 
+																	var results = d.height + "px";
+//																	console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+																	return results; 
 																})
-															.style("fill", layoutConfiguration.rangeBrush.rangeColor)
-															.style("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity)
+															.attr("fill", layoutConfiguration.rangeBrush.rangeColor)
+															.attr("fill-opacity", layoutConfiguration.rangeBrush.rangeOpacity)
 			    											.style("cursor", "ew-resize")
 															.on("mousedown", function(d) {
 																
@@ -1048,9 +1105,9 @@ function loadMultipleSubrangeSelector() {
 			
 			        												t.attr("resizing", true);
 			        												
-			        												d3.select(this).style("fill", 
+			        												d3.select(this).attr("fill", 
 			        																		layoutConfiguration.rangeBrush.activeResizeHandlerColor)
-			        																.style("fill-opacity", 
+			        																.attr("fill-opacity", 
 			        																		layoutConfiguration.rangeBrush.activeResizeOpacity);
 			        												
 			        												d.resize = function(originX, delta) {
@@ -1066,7 +1123,12 @@ function loadMultipleSubrangeSelector() {
 			        													d.width = (( layoutConfiguration.rangeBrush.minimumRangeWidth < resizedWidth ) 
 			        																	? resizedWidth : layoutConfiguration.rangeBrush.minimumRangeWidth);
 			        													
-			        													d3.select(convertIdToIdSelector("block_" + d.id)).attr("width", d.width);
+			        													d3.select(convertIdToIdSelector("block_" + d.id)).attr("width", function(a) {
+					        													
+					        														var results = d.width + "px";
+//					        														console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+					        														return results;
+					        													});
 			        													var eastResizeContainer = d3.select(convertIdToIdSelector("er_" + d.id)).node().parentNode;
 			        													d3.select(eastResizeContainer).attr("transform", "translate(" 
 			        																		+ (d.width 
@@ -1077,7 +1139,17 @@ function loadMultipleSubrangeSelector() {
 			        												};
 			        												
 			        												return;
+																})
+														.on("mouseup", function(d){
+																
+																d3.select(this).attr("fill", 
+																		layoutConfiguration.rangeBrush.rangeColor)
+																.attr("fill-opacity", 
+																		layoutConfiguration.rangeBrush.rangeOpacity);
+												
+																	return;
 																});
+;
 					
 					return;
 				});
@@ -1184,7 +1256,12 @@ function loadMultipleSubrangeSelector() {
 														
 														return results;
 													})
-													.style("width", function (d) { return d.width; });
+													.style("width", function (d) { 
+														
+															var results = d.width; 
+//															console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+															return results;
+														});
 								
 									return;
 								});
@@ -1199,8 +1276,8 @@ function loadMultipleSubrangeSelector() {
 					console.log("MultipleSubrangeSelector::addInternalTable called...");
 				
 					var table = d3.select(containerId)
-									.append("table")
-									.on("mousemove", mouseMovement);
+									.append("table");
+//									.on("mousemove", mouseMovement);
 			
 					if (tableHeaders) {
 						
@@ -1288,7 +1365,11 @@ function loadMultipleSubrangeSelector() {
 																
 																return results;
 															})
-														.style("width", function (d) { return d.width; });
+														.style("width", function (d) {
+																var results = d.width;
+//																console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+																return results; 
+															});
 									
 										return;
 									});
@@ -1308,8 +1389,18 @@ function loadMultipleSubrangeSelector() {
 				
 				var menuRollout = host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 						 									"menurollout"))
-										.style("width", width + "px")
-										.style("height", elementHeight + "px")
+										.style("width", function(d) {
+											
+												var results = width + "px";
+//												console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+												return results;											
+											})
+										.style("height", function(a) {
+											
+												var results = elementHeight + "px";
+//												console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+												return results;
+											})
 										.style("position", "absolute");
 				
 				menuRollout.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
@@ -1318,10 +1409,22 @@ function loadMultipleSubrangeSelector() {
 								.style("border", "1px solid black")
 								.style("position", "absolute")
 								.style("top", "0px")
-								.style("left", ((layoutConfiguration.margins.left * 1.25) 
-													+ layoutConfiguration.eventMenu.width) + "px")
-								.style("width", width + "px")
-								.style("height", height + "px")
+								.style("left", function(a) {
+										var results = ((layoutConfiguration.margins.left * 1.25)
+													+ layoutConfiguration.eventMenu.width) + "px";
+										return results; 
+									})
+								.style("width", function (a) {
+										
+										var results = width + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									})
+								.style("height", function (a) {
+										var results = height + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									})
 								.on("click", rollOutEventEditor);
 				
 				menuRollout.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
@@ -1329,11 +1432,28 @@ function loadMultipleSubrangeSelector() {
 								.style("background-color", layoutConfiguration.updateMenu.backgroundColor)
 								.style("border", "1px solid black")
 								.style("position", "absolute")
-								.style("top", height + "px")
-								.style("left", ((layoutConfiguration.margins.left * 1.25) 
-													+ layoutConfiguration.eventMenu.width) + "px")
-								.style("width", width + "px")
-								.style("height", height + "px")
+								.style("top", function (a) { 
+											var results = height + "px";
+											return results;
+										})
+								.style("left", function (a) {
+									
+										var results = ((layoutConfiguration.margins.left * 1.25) 
+														+ layoutConfiguration.eventMenu.width) + "px";
+										return results;
+									})
+								.style("width", function(a) {
+									
+										var results = width + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									})
+								.style("height", function (a) {
+									
+										var results = height + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									})
 								.on("click", rollOutRangeEditor);
 
 				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
@@ -1343,8 +1463,15 @@ function loadMultipleSubrangeSelector() {
 								.style("background-color", layoutConfiguration.updateMenu.backgroundColor)
 								.style("position", "absolute")
 								.style("top", "0px")
-								.style("width", layoutConfiguration.updateMenu.width + "px")
-								.style("left",  layoutConfiguration.margins.left + "px"); 
+								.style("width", function (a) {
+										var results = layoutConfiguration.updateMenu.width + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									})
+								.style("left", function(a) {
+										var results = layoutConfiguration.margins.left + "px";
+										return results;
+									});
 				
 				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 														"eventForm"))
@@ -1353,16 +1480,28 @@ function loadMultipleSubrangeSelector() {
 								.style("position", "absolute")
 								.style("background-color", layoutConfiguration.eventMenu.backgroundColor)
 								.style("top", "0px")
-								.style("width", layoutConfiguration.eventMenu.width + "px")
-								.style("left",  layoutConfiguration.margins.left + "px"); 
+								.style("width", function(a) {
+										var results = layoutConfiguration.eventMenu.width + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									})
+								.style("left", function (a) {
+										var results = layoutConfiguration.margins.left + "px";
+										return results;
+									});
 	
 				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 													"toolTip"))
 							.attr("class", "tooltip")
 							.style("border", "1px black solid")
+							.style("background-color", "beige")
+							.style("opacity", "0.75")
 							.style("position", "absolute")
 							.style("top", "0px")
-							.style("left", elementWidth + "px");
+							.style("left", function (a) { 
+								var results = elementWidth + "px";
+								return results;
+							});
 				
 				host.append("div").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 														"eventLabel"))
@@ -1371,11 +1510,19 @@ function loadMultipleSubrangeSelector() {
 							.style("position", "absolute")
 							.style("left", layoutConfiguration.eventMenu.width + "px")
 							.style("background-color", layoutConfiguration.eventMenu.dataDisplayColor)
-							.style("display", "none"); 
+							.style("display", function(a) {
+									var results = "none";
+//									console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+									return results;
+								}); 
 				
 				host.append("span").attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 													"lengthScratchPad"))
-									.style("display", "hidden");
+									.style("display", function(a) {
+											var results = "none";
+//											console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+											return results;
+										});
 								
 				var tableHeader = new Array({ 
 					colspan: 2, 
@@ -1419,7 +1566,11 @@ function loadMultipleSubrangeSelector() {
 				
 				d3.select(convertIdToIdSelector("rangeEditor")).append("select")
 							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "rangeEditorOptions"))
-							.style("display", "none")
+							.style("display", function(a) {
+									var results = "none";
+//									console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+									return results;
+								})
 							.on("change", function (d) {
 								
 								console.log("MutlipleSubrangeSelector::RangeEditor onChange called...");
@@ -1445,7 +1596,11 @@ function loadMultipleSubrangeSelector() {
 				
 				d3.select(convertIdToIdSelector("rangeEditor")).append("span")
 							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "rangeEditorLabel"))
-							.style("display", "none");
+							.style("display", function(a) {
+									var results = "none";
+//									console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+									return results;
+								});
 				
 				d3.select(convertIdToIdSelector(updateButtonId)).on("click", updateRangeClicked);
 				d3.select(convertIdToIdSelector(deleteButtonId)).on("click", deleteRangeClicked);	
@@ -1493,7 +1648,11 @@ function loadMultipleSubrangeSelector() {
 				
 				d3.select(convertIdToIdSelector("eventEditor")).append("select")
 						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "eventEditorOptions"))
-						.style("display", "none")
+						.style("display",  function(a) {
+							var results = "none";
+//							console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+							return results;
+						})
 						.on("change", function(d) {
 							
 							console.log("MultipleSubrangeSelector::eventEditor onChange called...");
@@ -1519,7 +1678,11 @@ function loadMultipleSubrangeSelector() {
 				
 				d3.select(convertIdToIdSelector("eventEditor")).append("span")
 							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "eventEditorLabel"))
-							.style("display", "none");
+							.style("display", function(a) {
+									var results = "none";
+//									console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+									return results;
+								});
 				
 				d3.select(convertIdToIdSelector(addEventLabelId)).on("click", updateEventClicked);
 				d3.select(convertIdToIdSelector(deleteEventLabelId)).on("click", deleteEventClicked);	
@@ -1553,9 +1716,21 @@ function loadMultipleSubrangeSelector() {
 				addInternalTable(convertIdToIdSelector("toolTip"), tableHeader, tableBody);
 			
 				// Make sure both are hidden.
-				d3.select(convertIdToIdSelector("updateForm")).style("display", "none");
-				d3.select(convertIdToIdSelector("toolTip")).style("display", "none");
-				d3.select(convertIdToIdSelector("eventForm")).style("display", "none");
+				d3.select(convertIdToIdSelector("updateForm")).style("display", function(a) {
+						var results = "none";
+//						console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+						return results;
+					});
+				d3.select(convertIdToIdSelector("toolTip")).style("display", function(a) {
+						var results = "none";
+//						console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+						return results;
+					});
+				d3.select(convertIdToIdSelector("eventForm")).style("display", function(a) {
+						var results = "none";
+//						console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+						return results;
+					});
 	
 				// Initialize non-public scoped variables.
 				toolTip = d3.select("div.tooltip");
@@ -1571,8 +1746,10 @@ function loadMultipleSubrangeSelector() {
 				
 				// Range is function of the controls width
 				// Domain is function of the data set being displayed.
-				timeSeriesScale = d3.scale.linear().range([0, layoutConfiguration.width])
-												.domain(timeSeriesDomain); 
+				var timeSeriesRange = new Array(0, layoutConfiguration.width);
+				timeSeriesScale = d3.scale.linear().range(timeSeriesRange)
+												.domain(d3.extent(timeSeriesDomain, 
+															layoutConfiguration.domainAccessor)); 
 				
 				timeSeriesAxis = d3.svg.axis()
 										.scale(timeSeriesScale)
@@ -1581,39 +1758,117 @@ function loadMultipleSubrangeSelector() {
 										
 				svg = d3.select(containerId).append("div")
 								.style("position", "absolute")
-								.style("top", layoutConfiguration.margins.top + "px")
-								.style("left", ((layoutConfiguration.margins.left * 1.25) 
-													+ layoutConfiguration.eventMenu.width) + "px")
+								.style("top", function (a) {
+										var results = layoutConfiguration.margins.top + "px";
+										return results;
+									})
+								.style("left", function(a) {
+										var results = ((layoutConfiguration.margins.left * 1.25) 
+													+ layoutConfiguration.eventMenu.width) + "px";
+										return results; 
+									})
 							.append("svg")
-								.attr("width", elementWidth)
-								.attr("height", (elementHeight 
-													+ layoutConfiguration.margins.bottom 
-													+ layoutConfiguration.eventLabels.height))
-							.append("g")
+								.attr("width", function (a) { 
+										var results = elementWidth + "px"; 
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results; 
+									})
+								.attr("height", function (a) { 
+										var results = (elementHeight 
+														+ layoutConfiguration.margins.bottom 
+														+ layoutConfiguration.eventLabels.height) + "px"; 
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results; 
+									});
+
+				svg.append("defs").append("clipPath")
+								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "clip"))
+								.append("rect")
+									.attr("x", function (a) {
+											var results = layoutConfiguration.margins.left + "px";
+											return results;
+										})
+									.attr("y", function (a) {
+										var results = "0px";
+										return results;
+										})
+									.attr("width", function (a) { 
+											var results = elementWidth + "px"; 
+//											console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+											return results; 
+										})
+									.attr("height", function (a) { 
+											var results = elementHeight + "px";
+//											console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+											return results;
+										});
+					
+				svg = svg.append("g")
 								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 													"multiplesubrangeselector_ui"))
-								.attr("transform", "translate(0" 
-										+ ", 0)");
+								.attr("transform", function (a) { 
+									
+									var results = "translate(" + layoutConfiguration.margins.left 
+															+ ", 0)";
+									return results;
+								});
+				
+				var yScale = d3.scale.linear()
+								.range(new Array(0, elementHeight))
+								.domain(d3.extent(timeSeriesDomain, layoutConfiguration.rangeAccessor));
+				var line0 = d3.svg.line()
+								.interpolate("linear")
+									.x(function (d) {
+										
+											var results = timeSeriesScale(d.x); 
+											return results; 
+										})
+									.y(function (d) {
+										
+											var results = yScale(d.us); 
+//											console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning (y): " + results + " for: " + d.us);
+											return results;
+										});
+				
+		
+				svg.append("path")
+						.datum(timeSeriesDomain)
+						.attr("clip-path", "url(" 
+											+ GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "clip")
+											+ ")")
+						.attr("class", "line line 0")
+						.attr("d", line0);
 				
 				svg.append("rect")
 						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 										"multiplesubrangeselector_target"))
 						.attr("x", 0)
 						.attr("y", 0)
-						.attr("width", layoutConfiguration.width)
-						.attr("height", elementHeight)
-						.attr("transform", "translate(" 
-								+ layoutConfiguration.margins.left 
-								+ ", "
-								+ 0
-								+ ")")
-						.style("fill", "none")
+						.attr("width", function (a) { 
+								var results = layoutConfiguration.width + "px";
+//								console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+								return results;
+							})
+						.attr("height", function (a) { 
+								var results = elementHeight + "px";
+//								console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+								return results;
+							})
+						.attr("transform", function (a) { 
+//							var results = "translate(" 
+//								+ layoutConfiguration.margins.left 
+//								+ ", 0)";
+								var results = "translate(0, 0)";
+								return results;
+							})
+						.attr("fill", "none")
 						.style("pointer-events", "all")
 						.style("cursor", "crosshair")
-						.style("fill", "none")
 						.on("mousedown", function (d, i) {
 							
-							var rect = createNewSubrange(d3.mouse(this)[0]);
+							var xCoor = d3.mouse(this)[0] - layoutConfiguration.margins.left;
+//							var xCoor = d3.mouse(this)[0];
+							var rect = createNewSubrange(xCoor);
 							
 							rectangles.push(rect);
 							
@@ -1628,41 +1883,58 @@ function loadMultipleSubrangeSelector() {
 						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 											"multiplesubrangeselector_xAxis"))
 						.attr("class", "x axis")
-						.attr("transform", "translate(" 
-								+ layoutConfiguration.margins.left 
-								+ ", "
-								+ elementHeight
-								+ ")")
+						.attr("transform", function (a) { 
+							var results = "translate(0, " + elementHeight + ")";
+//							var results = "translate(" 
+//								+ layoutConfiguration.margins.left 
+//								+ ", " + elementHeight + ")";
+								return results;
+							})
 						.call(timeSeriesAxis)
 						.selectAll("text")
 							.style("text-anchor", layoutConfiguration.axisLabels.anchor)
 							.attr("dx", layoutConfiguration.axisLabels.dx)
 							.attr("dy", layoutConfiguration.axisLabels.dy)
-							.attr("transform", "rotate(" + layoutConfiguration.axisLabels.angle + ")");
+							.attr("transform", function (a) { 
+									var results = "rotate(" + layoutConfiguration.axisLabels.angle + ")";
+									return results; 
+								});
 
 				svg.append("g")
 				.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 											"eventTarget"))
-				.attr("transform", "translate(" 
-						+ layoutConfiguration.margins.left 
-						+ ", "
-						+ elementHeight
-						+ ")")
+				.attr("transform", function (a) { 
+					var results = "translate(0, " + elementHeight + ")";
+//						var results = "translate(" + layoutConfiguration.margins.left 
+//							+ ", " + elementHeight + ")";
+						return results; 
+					})
 				.append("rect")
-					.attr("width", layoutConfiguration.width)
-					.attr("height", layoutConfiguration.eventLabels.height)
-					.style("fill", "cyan")
+					.attr("width", function (a) { 
+							var results = layoutConfiguration.width + "px";
+//							console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+							return results;
+						})
+					.attr("height", function (a) { 
+							var results = layoutConfiguration.eventLabels.height + "px";
+//							console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+							return results;
+						})
+					.attr("fill", "cyan")
 					.style("opacity", 0.25)
 					.style("pointer-events", "all")
 					.style("cursor", "cell")
 					.on("mousedown", function (d) {
+						
+//						var xCoor = d3.mouse(this)[0];
+						var xCoor = d3.mouse(this)[0] - layoutConfiguration.margins.left;
 							
 							console.log ("Add Event of Interest element @T(" 
-										+ timeSeriesScale.invert(d3.mouse(this)[0] - layoutConfiguration.margins.left) 
+										+ timeSeriesScale.invert(xCoor) 
 										+ ")");
 							
 							// Create Event
-							var seriesEvent = createNewEvent(d3.mouse(this)[0]);
+							var seriesEvent = createNewEvent(xCoor);
 							
 							events.push(seriesEvent);
 									
@@ -1672,7 +1944,7 @@ function loadMultipleSubrangeSelector() {
 							
 							return;
 						});
-		
+				
 				return;
 			}
 					
@@ -1689,10 +1961,24 @@ function loadMultipleSubrangeSelector() {
 									+ layoutConfiguration.margins.bottom;
 									
 				d3.select(containerId).style("position", "absolute")
-								.style("top", layoutConfiguration.containerPosition.top)
-								.style("left", layoutConfiguration.containerPosition.left)
-								.style("height", elementHeight + layoutConfiguration.margins.bottom + 5)
-								.style("width", elementWidth);
+								.style("top", function (a) {
+										var results = layoutConfiguration.containerPosition.top + "px";
+										return results;
+									})
+								.style("left", function (a) {
+										var results = layoutConfiguration.containerPosition.left + "px";
+										return results;
+									})
+								.style("height", function (a) { 
+										var results = (elementHeight + layoutConfiguration.height 
+															+ layoutConfiguration.margins.bottom + 5) + "px";
+										return results;
+									})
+								.style("width", function (a) { 
+										var results = elementWidth + layoutConfiguration.margins.left + "px";
+//										console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
+										return results;
+									});
 
 				// Adds SVG Elements and Time Line Selector
 				buildVisualizationElements(containerId, timeSeriesDomain);

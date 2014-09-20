@@ -729,20 +729,36 @@ function loadTemporalNodeGraph() {
 				drag = force.drag()
 							.on("dragstart", handleDragStart);
 				
+				var title = d3.select(containerId).append("h2")
+								.style("position", "absolute")
+								.style("top", layoutConfiguration.titleProperties.top)
+								.style("left", layoutConfiguration.titleProperties.left)
+								.style("width", elementWidth)
+								.style("text-align", layoutConfiguration.titleProperties.textAlignment)
+								.attr("id", 
+										GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+												"temporalnodegraph_title"))
+								.text(layoutConfiguration.titleProperties.labelPrefix);
+		
+				var offsetHeight = title.node().offsetHeight;
+
 				var controlContainer = d3.select(containerId).append("div")
 											.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(
 																		prefix, "temporalnodegraph_container"))
 											.style("position", "absolute")
-											.style("top", layoutConfiguration.margins.top + "px")
-											.style("left", layoutConfiguration.margins.left + "px")
+											.style("top", layoutConfiguration.containerProperties.top + "px")
+											.style("left", layoutConfiguration.containerProperties.left + "px")
 											.style("border", layoutConfiguration.containerProperties.borders)
 											.style("background-color", layoutConfiguration.containerProperties.backgroundColor); 
 
 				svg = controlContainer.append("svg")
 								.attr("height", elementHeight)
 								.attr("width", elementWidth)
+								.style("top", (layoutConfiguration.margins.top 
+													+ offsetHeight) + "px")
 							.append("g")
-								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "temporalnodegraph_ui"));
+								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
+																	"temporalnodegraph_ui"));
 				
 				link = svg.selectAll(".link");
 				node = svg.selectAll("g.nodeContainer g");
@@ -772,30 +788,51 @@ function loadTemporalNodeGraph() {
 						          	{
 						          		id: "selection_default",
 						          		classes: "selected",
-						          		gradientClass: "",
+						          		gradientClass: "defaultGradient",
 						          		label: "< Select Metrics >",
-						          		value: ""
+						          		value: "defaultGradient",
+						          		stopData: [ {offset: 0, color: "#fff"},
+						          		            {offset: 100, color: "#fff"}
+						          		           ]
 						          	},
 						          	{
 						          		id: "selection_betweenness",
 						          		classes: "outlined",
 						          		gradientClass: "betweennessGradient",
 						          		label: "Betweenness",
-						          		value: "Betweenness"
+						          		value: "Betweenness",
+						          		stopData: [ {offset: 0, color: "red"},
+						          		            {offset: 0.25, color: "white"},
+						          		            {offset: 0.5, color: "blue"},
+						          		            {offset: 0.75, color: "black"},
+						          		            {offset: 1.0, color: "green"}
+						          		            ]
 						          	},
 						          	{
 						          		id: "selection_eigCen",
 						          		classes: "outlined",
 						          		gradientClass: "eigCenGradient",
 						          		label: "Eigenvector Centrality",
-						          		value: "Eigenvector Centrality"
+						          		value: "Eigenvector Centrality",
+						          		stopData: [ {offset: 0, color: "blue"},
+						          		            {offset: 0.25, color: "white"},
+						          		            {offset: 0.5, color: "green"},
+						          		            {offset: 0.75, color: "black"},
+						          		            {offset: 1.0, color: "red"}
+						          		            ]
 						          	},
 						          	{
 						          		id: "selection_degree",
 						          		classes: "outlined",
 						          		gradientClass: "degreeGradient",
 						          		label: "Degree",
-						          		value: "Degree"
+						          		value: "Degree",
+						          		stopData: [ {offset: 0, color: "green"},
+						          		            {offset: 0.25, color: "white"},
+						          		            {offset: 0.5, color: "red"},
+						          		            {offset: 0.75, color: "black"},
+						          		            {offset: 1.0, color: "blue"}
+						          		            ]
 						          	}
 						          ]
 				};
@@ -832,18 +869,6 @@ function loadTemporalNodeGraph() {
 					
 				});
 
-				var title = controlContainer.append("h2")
-								.style("position", "absolute")
-								.style("top", "0px")
-								.style("left", "0px")
-								.style("width", "100%")
-								.style("text-align", "center")
-								.attr("id", 
-										GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
-												"temporalnodegraph_title"));
-						
-				var offsetHeight = title.node().offsetHeight;
-				
 				linkDataDisplay = controlContainer.append("div")
 											.style("position", "absolute")
 											.style("top", (offsetHeight + layoutConfiguration.containerProperties.padding) + "px")

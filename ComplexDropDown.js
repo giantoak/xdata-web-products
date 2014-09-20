@@ -181,14 +181,42 @@ function loadComplexDropDown() {
 				
 				console.log("ComplexDropDown::buildUI called...");
 				
-				var containerControl = d3.select(containerId).append("div")
-													.style("position", "absolute")
-													.style("width", layoutConfiguration.containerProperties.width)
-													.style("height", layoutConfiguration.containerProperties.height)
-													.style("top", layoutConfiguration.containerProperties.top)
-													.style("left", layoutConfiguration.containerProperties.left)
-													.style("background-color", layoutConfiguration.containerProperties.backgroundColor);
+				var svgElementSelector = containerId + " svg";
+				d3.select(svgElementSelector).insert("defs", ":first-child").selectAll("linearGradient")
+												.data(layoutConfiguration.options)
+											.enter().append("linearGradient")
+												.attr("id", function (d) {
+														
+														return d.gradientClass;
+													})
+												.attr("y1", "0")
+												.attr("y2", "0")
+												.attr("x1", "0")
+												.attr("x2", layoutConfiguration.containerProperties.width)
+													.selectAll("stop")
+															.data(function (d) { 
+																
+																	return d.stopData;
+																})
+														.enter().append("stop")
+															.attr("offset", function (s) {
+																	
+																	return s.offset;
+																})
+															.attr("stop-color", function (s) {
+																	
+																	return s.color;
+																});
 				
+				
+				var containerControl = d3.select(containerId).append("div")
+											.style("position", "absolute")
+											.style("width", layoutConfiguration.containerProperties.width)
+											.style("height", layoutConfiguration.containerProperties.height)
+											.style("top", layoutConfiguration.containerProperties.top)
+											.style("left", layoutConfiguration.containerProperties.left)
+											.style("background-color", layoutConfiguration.containerProperties.backgroundColor);
+							
 				containerControl.selectAll("div").data(layoutConfiguration.options)
 								.enter().append("div")
 									.style("position", "absolute")

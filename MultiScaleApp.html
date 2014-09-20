@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>MultiScale Time Series Analysis Application</title>
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+
+		<script type="text/javascript" src="Utilities.js" defer="defer"></script>
+		<script type="text/javascript" src="ComplexDropDown.js" defer="defer"></script>
+		<script type="text/javascript" src="TemporalNodeGraph.js" defer="defer"></script>
+		<script type="text/javascript" src="MultipleSubrangeSelector.js" defer="defer" ></script>
+		<script type="text/javascript" src="ChartManager.js" defer="defer"></script>
+		<script type="text/javascript" src="DigitalChart.js" defer="defer"></script>
+		<script type="text/javascript" src="AnalogChart.js" defer="defer"></script>
+		<script type="text/javascript" src="HorizonChart.js" defer="defer"></script>
+		<script type="text/javascript" src="ScatterChart.js" defer="defer"></script>
+		
+		<link rel="stylesheet" type="text/css" href="./RangeGradients.css" />
+		
+	</head>
+	<body>
+	
+		<div id="rangeSelectorContainer" 
+				style="border: 3px groove lightgray; 
+						position: absolute; 
+						top: 10px; left: 10px;" >
+		</div>
+		<div id="dynamicDisplayContainer" 
+				style="position: absolute;
+						top: 300px; left: 10px; 
+						width: 1600px; height: 1000px; ">
+		</div>
+	
+	
+		<script type="text/javascript">
+		
+			$(document).ready(function pageSetup() {
+				
+				var domainAccessor = function accessDomainValues(d) { return d.x; };
+				var rangeAccessor = function accessRangeValues(d) { return d.us; }
+				
+				loadUtilitiesModule();
+				loadMultipleSubrangeSelector();
+				
+				var GoUtilities = window.utilities;
+				var GoControls = window.controls;
+				var mss = GoControls.MultipleSubrangeSelector;
+				var cm = GoControls.TimeSeriesCharts.ChartManager;
+				var tng = GoControls.TemporalNodeGraph;
+				
+				var mssLayout = {
+						
+						containerPosition: { 
+							top: 10,
+							left: 10
+							},
+						domainAccessor: domainAccessor,
+						rangeAccessor: rangeAccessor,
+						width: 800,
+						height: 70,
+						margins: {
+								top: 20,
+								right: 280,
+								bottom: 40,
+								left: 40
+							},
+						eventMenu: {
+								inDuration: 200,
+								outDuration: 50,
+								width: 230,
+								formatPrecision: 2,
+								backgroundColor: "cyan",
+								dataDisplayColor: "beige"
+						},
+						updateMenu: {
+								inDuration: 200,
+								outDuration: 50,
+								width: 230,
+								formatPrecision: 2,
+								backgroundColor: "darkgray",
+								valueFormatter: function (value, precision) { 
+										return Number(value).toFixed(precision); 
+									}
+							},
+						toolTip: {
+							inDuration: 250,
+							outDuration: 5,
+							valueFormatter: function (value, precision) { 
+									return Number(value).toFixed(precision); 
+								},
+							formatPrecision: 2,
+							width: 230,
+							inOpacity: 0.9,
+							outOpacity: 0
+							},
+						rangeBrush: {
+							width: 25,
+							height: 100,
+							rangeColor: 'blue',
+							activeResizeHandleColor: 'pink',
+							rangeOpacity: 0.2,
+							activeResizeOpacity: 1,
+							minimumRangeWidth: 5,
+							resizeHandleWidth: 3
+							},
+							axisLabels: {
+								height: 40,
+								angle: 25,
+								dx: "0.3em",
+								dy: "0.3em",
+								anchor: "start"
+								},
+							eventLabels: {
+								height: 70,
+								angle: 25,
+								dx: "0.3em",
+								dy: "0.3em",
+								anchor: "middle",
+								strokeColor: "red",
+								strokeWidth: "2px",
+								xOffset: 30,
+								yOffset: 20
+								}
+				};
+				
+				var tngLayout = {
+						containerProperties: {
+							top: 50,
+							left: 0,
+							width: 500,
+							height: 500,
+							borders: "1px solid black",
+							backgroundColor: "white",
+							padding: 5,
+							margin: 5
+						},
+					titleProperties: {
+						labelPrefix: "Week: ",
+						top: "0px",
+						left: "0px",
+						textAlignment: "center"
+					},
+					margins: {
+							top: 20,
+							left: 20,
+							right: 20,
+							bottom: 20,
+							horizontalMargins: 40,
+							verticalMargins: 40
+						},
+					graphProperties: {
+							transitionTiming: 1500,
+							charge: -400,
+							linkDistance: 40,
+							nodeRadius: 18,
+							fixedColor: "lightgray",
+							baseNodeColor: "white",
+							betweennessRange: ["red", "white", "blue", "black", "green"],
+							eigCenRange: ["blue", "white", "green", "black", "red"],
+							degreeRange: ["green", "white", "black", "blue", "red"],
+							betweennessScalingFunction: d3.scale.linear(),
+							eigCenScalingFunction: d3.scale.pow().exponent(4),
+							degreeScalingFunction: d3.scale.linear()
+						},
+					scrubberProperties: {
+						width: 24,
+						height: 20,
+						padding: 2,
+						margin: 2,
+						borders: "1px solid black",
+						backgroundColor: "mintcream",
+						backBackgroundColor: "hotpink",
+						backBorders: "2px solid maroon",
+						forwardBackgroundColor: "powderblue",
+						forwardBorders: "2px solid darkblue"
+					}
+				};
+				var cmLayout = {
+						containerProperties: {
+							top: 0,
+							left: 0,
+							width: 900,
+							height: 300,
+							borders: "none",
+							backgroundColor: "white",
+							padding: 5,
+							margins: 5
+						},
+						margins: {
+							top: 20,
+							left: 40,
+							right: 40,
+							bottom: 20,
+							horizontalMargins: 40,
+							verticalMargins: 80
+						},
+						graphRegion: {
+							width: 800,
+							height: 300,
+							legendOffset: 45,
+							textAnchor: "end",
+							duration: 700,
+							hoverLine: {
+								x1: 20,
+								x2: 20,
+								y1: 2,
+								y2: 320,
+								strokeWidth: 1,
+								strokeColor: "grey",
+								hiddenOpacity: 1e-6,
+								displayedOpacity: 0.85
+							},
+							defaultChartHeight: 100,
+							xAxisXTranslate: function () {
+								
+								return cmLayout.margins.verticalMargins 
+								+ cmLayout.containerProperties.padding;
+ 
+							}
+						},
+						analog: {
+							chartHeight: 100,
+							gap: 30,
+							width: function () {
+								
+								return (cmLayout.containerProperties.width 
+										- (cmLayout.margins.verticalMargins 
+												+ cmLayout.containerProperties.padding));
+							},
+							graphTransform: function () {
+								
+								return cmLayout.margins.verticalMargins 
+											+ cmLayout.containerProperties.padding;
+							}
+						},
+						digital: {
+							chartHeight: 20,
+							width: function () {
+							
+								return (cmLayout.containerProperties.width 
+										- (cmLayout.margins.left 
+												- cmLayout.containerProperties.padding));
+							},
+							graphTransform: function () {
+								return cmLayout.margins.left 
+											- cmLayout.containerProperties.padding;
+								}
+						},
+						horizon: {
+							chartHeight: 100,
+							domain: [-1, 0, 0, 1],
+							range: ["#08519c", "#bdd7e7", "#bad4b3", "#006d2c"],
+							gap: 30,
+							bands: 3,
+							width: function () {
+							
+								return (cmLayout.containerProperties.width 
+										- (cmLayout.margins.left 
+												- cmLayout.containerProperties.padding));
+							},
+							graphTransform: function () {
+								return cmLayout.margins.left 
+											- cmLayout.containerProperties.padding;
+								}
+						},
+						scatter: {
+							chartHeight: 100,
+							radius: 4,
+							gap: 30,
+							width: function () {
+								
+								return (cmLayout.containerProperties.width 
+										- (cmLayout.margins.verticalMargins 
+												+ cmLayout.containerProperties.padding));
+							},
+							graphTransform: function () {
+								
+								return cmLayout.margins.verticalMargins 
+											+ cmLayout.containerProperties.padding;
+							}
+						}
+				};
+
+				
+				var createdComponents = { count: 0 };
+				
+				var subrangeMovedHandler = function subrangeMoved(data) {
+					
+					console.log("User moved range: " + data.id);
+					
+					// TODO: Add real logic...
+					
+					return;
+				};
+				
+				var subrangeCreatedHandler = function subrangeCreated(rangeId, data) {
+					
+					console.log("User created new subrange: " + data.id);
+					
+					data.onPositionUpdated.addHandler(subrangeMovedHandler);
+					
+					// TODO: Add logic to add the rest of the controls to display and analyze the subrange.
+					
+					// Make a call to ss_dump with a start and end range defined by data.startOffset & data.endOffset repsectfully
+					
+					// In the callback to d3.json call - create a Time series and Node Graph components.
+				
+					createdComponents[data.id] = { data: data, idSuffix: createdComponents.count++ };
+					var request = "ss_dump?start=" + Math.floor(data.startOffset) + "&end=" + Math.floor(data.endOffset);
+					
+					d3.json(request, function (error, subrange) {
+						
+						if (error) {
+							
+							console.warn(error)
+						} else {
+							
+							var addedControls = {};
+							
+							createdComponents[data.id]["addedControls"] = addedControls;
+							
+							var tngControlPrefix = "TNG_" + createdComponents[data.id].idSuffix;
+							var cmControlPrefix = "CM_" + createdComponents[data.id].idSuffix;
+							
+							var temporalComponentsContainer = "temporalcontainer_" + createdComponents[data.id].idSuffix;
+							var topOffset = createdComponents[data.id].idSuffix * 675;  
+							
+							var tcc = d3.select("#dynamicDisplayContainer").append("div")
+									.attr("id", temporalComponentsContainer)
+									.style("position", "absolute")
+									.style("border", "1px solid black")
+									.style("top", topOffset + "px")
+									.style("height", "650px")
+									.style("width", "1600px");
+							
+							tcc.append("h3")
+											.style("text-align", "left")
+											.style("text-decoration", "underline")
+											.text("Subrange: " + data.id);
+							
+							var tngContainer = "tng_child_" + createdComponents[data.id].idSuffix
+							var cmContainer = "cm_child_" + createdComponents[data.id].idSuffix
+							
+							tcc.append("div").attr("id", cmContainer)
+										.style("position", "absolute")
+										.style("top", "50px")
+										.style("left", "0px");
+							tcc.append("div").attr("id", tngContainer)
+										.style("position", "absolute")
+										.style("top", "0px")
+										.style("left", "1000px");
+							
+							tngContainer = "#" + tngContainer;
+							cmContainer = "#" + cmContainer;
+							console.log(d3.select(tngContainer));
+							console.log(d3.select(cmContainer));
+							
+							addedControls["cm"] = new cm(cmControlPrefix, cmContainer, cmLayout);
+							
+							addedControls["tng"] = new tng(tngControlPrefix, tngContainer, tngLayout);
+							
+							// Need to add logic to push the subrange into the Chart appropriately...
+							
+							console.log("CreateSubrange callback added components: ");
+							console.log(createdComponents[data.id]);
+							
+							console.log("CreateSubrange callback received: ");
+							console.log(subrange);
+						}
+					});
+					
+					
+					return;
+				};
+				
+				var subrangeDeletedHandler = function subrangeDelete(data) {
+					
+					console.log("User deleted subrange: " + data.id);
+					
+					//TODO: Add logic to remove the controls used to display and analyze this subrange
+					
+					var temporalComponentsContainer = "#temporalcontainer_" + createdComponents[data.id].idSuffix;
+					var container = $(temporalComponentsContainer); 
+					
+					container.nextAll()
+							.css("top", function() {
+								
+								var currentTop = parseInt($(this).css("top").slice(0, -2));
+								var displacedTop = parseInt(container.css("height").slice(0, -2)) + 25;
+								var top = currentTop - displacedTop;
+								
+								return top + "px";
+							});
+					
+					container.remove();
+					
+					delete createdComponents[data.id];
+					
+					--createdComponents.length;
+					
+					return;
+				};
+				
+				var seriesEventCreatedHandler = function seriesEventCreated(data) {
+					
+					console.log("User created a Series Event Marker");
+					
+					// TODO: 	Add logic to identify which subranges contain this event's offset, 
+					// 			then forward the marker to them - This change would require a modification
+					//			to the chart component to allow them accept and display these event markers.
+					
+					return;
+				}
+				
+				var subrangeSelectorControl = null;
+				var subrangeDisplayControls = new Array();
+				
+				d3.json("ss_dump", function (error, data) {
+					
+					if (error) {
+						
+						console.warn(error);
+					} else {
+					
+						subrangeSelectorControl = new mss("SSC", "#rangeSelectorContainer", data, mssLayout);
+						
+						subrangeSelectorControl.AddOnNewSubrangeCreatedHandler(subrangeCreatedHandler);
+						subrangeSelectorControl.AddDeletedSubrangeHandler(subrangeDeletedHandler);
+						subrangeSelectorControl.AddNewSeriesEventCreatedHandler(seriesEventCreatedHandler);
+						
+					}
+
+					return;
+				});
+				
+				
+			});
+		</script>
+	</body>
+</html>

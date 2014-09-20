@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Check List With Combo Box Proof of Concept</title>
+
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+		
+	</head>
+	<body>
+	
+		<div id="testContainer" style="border: 1px solid black; background-color: AliceBlue; height: 2000px; padding: 5px;">
+			<svg width="1500" height="1500">
+			</svg>
+		</div>
+
+		<script type="text/javascript" src="Utilities.js" defer="defer"></script>
+		<script type="text/javascript" src="CheckListwithComboBox.js" defer="defer"></script>
+		
+		<script type="text/javascript">
+			
+			$(document).ready(function () {
+				
+				console.log("JQuery>Document::ready handler called...");
+				
+				var GoUtilities = window.utilities;
+				var GoControls = window.controls;
+				var clwcb = GoControls.CheckListwithComboBox;
+				
+				var layoutConfiguration = {
+						containerProperties: {
+									x: "0",
+									y: "0",
+									width: "700",
+									backgroundColor: "white",
+									strokeColor: "black",
+									strokeWidth: 1
+							},
+						dataSets: new Array("Connected Components", 
+												"Density", 
+												"Average Clustering Coefficient", 
+												"Assortativity",
+												"Us",
+												"Them"),
+						chartTypes: new Array("analog", 
+												"digital", 
+												"horizon", 
+												"scatter"),
+						optionProperties: {
+							x: 1,
+							y: 1,
+							width: 698,
+							height: 50,
+							strokeColor: "black",
+							strokeWidth: 1,
+							fillColor: "none",
+							textColor: "black",
+							fontFamily: "Times New Roman",
+							fontSize: "24pt",
+							labelPosition: { x: "60", y: "35" },
+							translate: { 	
+											x: 0, 
+											y: function(index) { 
+													return layoutConfiguration.optionProperties.height * index; 
+												}
+										},
+							checkBoxProperties: {
+											x: "5", 
+											y: "5",
+											width: "40",
+											height: "40",
+											fillColor: "white",
+											strokeColor: "black",
+											strokeWidth: "3"
+									},
+							comboBoxProperties: {
+											itemsContainerProperties: {												
+													x: "500",
+													y: "5",
+													width: "150",
+													height: "40",
+													fillColor: "none",
+													strokeColor: "black",
+													strokeWidth: "3"								
+												},
+											dropDownMenuProperties: {
+													openWidth: 800,
+													closedWidth: 150,
+													x: "500",
+													y: "5",
+													width: "150",
+													height: "45",
+													fillColor: "mintcream",
+													strokeColor: "black",
+													strokeWidth: "3"													
+												},
+											dropDownMenuOptionsProperties: {
+													xOffset: 505,
+													y: "35",
+													height: "40",
+													strokeColor: "black",
+													itemWidth: "150",
+													optionWidth: "200"
+											},
+											dropDownMenuButtonProperties: {
+													x: "655",
+													y: "5",
+													width: "40",
+													height: "40",
+													fillColor: "lightgrey",
+													strokeColor: "darkgrey",
+													strokeWidth: "3"												
+											}
+									}
+						}
+				};
+				
+				var control = new clwcb("CLWCB", "#testContainer", layoutConfiguration);
+				
+				console.log("JQuery>Document::ready handler completed.");
+				return;
+			});
+		</script>
+	
+	</body>
+</html>
