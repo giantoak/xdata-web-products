@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jQuery UI Position - Default functionality</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <style>
+  #parent {
+    width: 60%;
+    height: 40px;
+    margin: 10px auto;
+    padding: 5px;
+    border: 1px solid #777;
+    background-color: #fbca93;
+    text-align: center;
+  }
+  .positionable {
+    position: absolute;
+    display: block;
+    right: 0;
+    bottom: 0;
+    background-color: #bcd5e6;
+    text-align: center;
+  }
+  #positionable1 {
+    width: 75px;
+    height: 75px;
+  }
+  #positionable2 {
+    width: 120px;
+    height: 40px;
+  }
+  select, input {
+    margin-left: 15px;
+  }
+  </style>
+  <script>
+  
+//   var handleRandomResize = function() { console.log("not initialized"); return; };
+  
+//   $(function() {
+	
+// 	  handleRandomResize = function randomResize() {
+		  
+// 		  var which = Math.floor((Math.random() * 1000000) + (Math.random() * 10000)) % 3; 
+		  
+// 		  var width = Math.floor((Math.random() * 1000) + 100);
+// 		  var height = Math.floor((Math.random() * 1000) + 100);
+		  
+// 		  console.log("Which: " + which);
+		  
+// 		  switch (which) {
+// 		  case 0:
+			  
+// 			  $("#parent").css("width", width);
+			  
+// 			  break;
+			  
+// 		  case 1:
+			  
+// 			  $("#parent").css("height", width);
+			  
+// 			  break;
+			  
+// 		  case 2:
+			  
+// 			  $("#parent").css("width", width)
+// 			  				.css("height", height);
+			  
+// 			  break;
+			  
+// 		  default:
+// 			  console.log("WTF!!!");
+// 			  break;
+// 		  }
+		  
+// 		  position();
+		  
+// 		  return;
+// 	  };
+	  
+	  function resizedHandler(event, ui) {
+		  
+		  var deltaWidth = ui.originalSize.width - ui.size.width;
+		  var deltaHeight = ui.originalSize.height - ui.size.height;
+		  
+		  console.log("LayoutMockup::resizedHandler { deltaWidth: " 
+			  				+ deltaWidth +  ", deltaHeight: " + deltaHeight 
+			  				+ ", originalWidth: " + ui.originalSize.width + ", originalHeight: " + ui.originalSize.height 
+			  				+ ", currentWidth: " + ui.size.width + ", currentHeight: " + ui.size.height 
+			  				+ "}");
+		  
+		  position();
+		  
+		  return;
+	  }
+
+    function position() {
+//       $( ".positionable" ).position({
+//         of: $( "#parent" ),
+//         my: $( "#my_horizontal" ).val() + " " + $( "#my_vertical" ).val(),
+//         at: $( "#at_horizontal" ).val() + " " + $( "#at_vertical" ).val(),
+//         collision: $( "#collision_horizontal" ).val() + " " + $( "#collision_vertical" ).val(),
+//         within: $("#container")
+      });
+    }
+ 
+//     $( ".positionable" ).css( "opacity", 0.5 );
+ 
+//     $( "select, input" ).bind( "click keyup change", position );
+ 
+//     $( "#parent" ).draggable({
+// 					      drag: position
+// 					    })
+// 					.resizable({resize: resizedHandler, handles: "nw, se, n, e, w, s" });
+//    position();
+//   });
+
+	$("#brushMockup").resizable({resize: resizedHandler, handles: "nw, se, n, e, w, s" });
+  
+  </script>
+</head>
+<body>
+
+<!-- 
+<div style="padding: 20px; margin-top: 5px; position: absolute; top: 20px; left: 20px; ">
+  position...
+  <div style="padding-bottom: 20px;">
+    <b>my:</b>
+    <select id="my_horizontal">
+      <option value="left">left</option>
+      <option value="center">center</option>
+      <option value="right">right</option>
+    </select>
+    <select id="my_vertical">
+      <option value="top">top</option>
+      <option value="center">center</option>
+      <option value="bottom">bottom</option>
+    </select>
+  </div>
+  <div style="padding-bottom: 20px;">
+    <b>at:</b>
+    <select id="at_horizontal">
+      <option value="left">left</option>
+      <option value="center">center</option>
+      <option value="right">right</option>
+    </select>
+    <select id="at_vertical">
+      <option value="top">top</option>
+      <option value="center">center</option>
+      <option value="bottom">bottom</option>
+    </select>
+  </div>
+  <div style="padding-bottom: 20px;">
+    <b>collision:</b>
+    <select id="collision_horizontal">
+      <option value="flip">flip</option>
+      <option value="fit">fit</option>
+      <option value="flipfit">flipfit</option>
+      <option value="none">none</option>
+    </select>
+    <select id="collision_vertical">
+      <option value="flip">flip</option>
+      <option value="fit">fit</option>
+      <option value="flipfit">flipfit</option>
+      <option value="none">none</option>
+    </select>
+  </div>
+</div>
+ 
+ 
+ <div id="container" style="background-color: #00a0a0; width: 500px; height: 500px; position: absolute; top: 200px; left: 20px; ">
+ 
+<div id="parent" style="border: 3px groove lightgray; ">
+  <p>
+  This is the position parent element.
+  </p>
+  <button onclick="handleRandomResize();">Resize Me</button>
+</div>
+ 
+<div class="positionable" id="positionable1">
+  <p>
+  to position
+  </p>
+</div>
+ 
+<div class="positionable" id="positionable2">
+  <p>
+  to position 2
+  </p>
+</div>
+ 
+ </div>
+ -->
+ 
+ <div style="border: 3px groove aquamarine; background-color: purple; top: 1000px; ">
+ 	<svg height="240px" width="1120px">
+ 		<g  >
+ 			<rect id="brushMockup" fill="steelblue" height="130" width="800" ></rect>
+ 		</g>
+ 	</svg>
+ </div>
+ 
+</body>
+</html>

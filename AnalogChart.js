@@ -71,16 +71,21 @@ function loadAnalogChart() {
 				var layoutConfiguration = null;
 				var height = 100;
 				var gap = 10;
-				var xValue = function (d) { return d[0].getTime(); };
+				var xValue = function (d) { 
+					return d[0].getTime(); 
+					};
 				var yDomain = null;
 				var xScale = null;
 				var color = d3.scale.category10();
-				var y = null;
+				var yRangeAccessor = null;
 				var id = null;
 
 				function X(d) {
 					
-					return xScale(xValue(d));
+					var value = (new Date(xValue(d))).getTime();
+					var results = xScale(value);
+					
+					return results;
 				}
 				
 				var idProperty = function idProperty(value) {
@@ -170,7 +175,10 @@ function loadAnalogChart() {
 				function handleUninitialized(g, d) {
 					
 					var minY = d3.min(d.data, function (element) {
+						// Scans all the elements in Data returning
+						// an array of minimum values.
 						return d3.min(d.yVal.map(function (c) { 
+								// Returns all the important properties of the elements of Data
 								return element[c]; 
 							}));
 					});
@@ -183,17 +191,21 @@ function loadAnalogChart() {
 					
 					yDomain = new Array(minY, maxY);
 					
-					y = d3.scale.linear().domain(yDomain).range(new Array((height - gap), 0));
+					// Sets up the display area as 4th quadrant 
+					yRangeAccessor = d3.scale.linear().domain(yDomain).range(new Array((height - gap), 0));
 					
-					var yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
+					var yAxis = d3.svg.axis().scale(yRangeAccessor).orient("left").ticks(5);
 					
-					g.attr("id", d.id)
+					// remove all the 'existing' children of the graph
+					g.selectAll("g.y.axis").remove();
+					
+					g.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id))
 						.append("g")
 							.attr("class", "y axis")
 							.attr("transform", "translate(-1, 0)")
 							.call(yAxis);
 
-					return { yDomain: yDomain, y: y };
+					return { yDomain: yDomain, y: yRangeAccessor };
 				}
 				
 				var init = function init(selection) {
@@ -208,7 +220,8 @@ function loadAnalogChart() {
 							
 							if (chartConfig) {
 								
-								if (chartConfig[id]) {
+								if (chartConfig[id]
+									&& !d.updated) {
 									
 									config = { yDomain: chartConfig[id].yDomain, y: chartConfig[id].y };
 								} else {
@@ -222,14 +235,18 @@ function loadAnalogChart() {
 							}
 							
 							yDomain = config.yDomain;
-							y = config.y;
+							yRangeAccessor = config.y;
 							
 							d.yVal.forEach(function (c, i) {
 								
 								var valueLine = d3.svg.line()
-													.x(X)
+													.x(function (a) {
+															var results = X(a);
+															return results;
+														})
 													.y(function (a) { 
-															return y(a[c]); 
+															var results = yRangeAccessor(a[c]);
+															return results; 
 														});
 								
 								if (chartConfig) {
@@ -242,10 +259,12 @@ function loadAnalogChart() {
 									
 									g.append("path")
 										.attr("class", "path " + c)
+										.attr("fill", "none")
 										.attr("d", valueLine(d.data))
 										.attr("clip-path", "url(" + GoUtilities.GenerateIdentifierSelector(
 												GoUtilities.GenerateComponentSpecificIdentifiers(containerPrefix, "clip")) + ")")
-										.style("stroke", color(d.id + i));
+										.style("stroke", color(d.id + i))
+										.style("stroke-width", "1");
 									
 									g.append("text").text(d.name)
 										.attr("class", "legend")
@@ -256,6 +275,7 @@ function loadAnalogChart() {
 							});
 							
 							this.__chart__[d.id] = config;
+							d.updated = false;
 						}		
 					});
 				};

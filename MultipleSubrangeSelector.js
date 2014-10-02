@@ -69,6 +69,9 @@ function loadMultipleSubrangeSelector() {
 			var elementWidth = 850;
 			var elementHeight = 135; 
 			var prefix = null;
+			var oldOffsets = new Array (-1, -1);
+			var fireRangeUpdate = false;
+			var isDragging = false;
 			
 			
 			var subrangeCreationEventManagement = new GoAbstractControls.EventHandlerManagement();
@@ -169,26 +172,67 @@ function loadMultipleSubrangeSelector() {
 				
 				return event;
 			}
-			
+
+			var fetchRangeValue = function fetchRangeValue(id) {
+				
+				console.log("MultipleSubrangeSelector::fetchRangeValue called: " + id);
+				
+				var results = $.grep(rectangles, function (e) {
+					
+					return e.id == id;
+				});
+				
+				console.log("MultipleSubrangeSelector::fetchRangeValue returning: " 
+										+ results[0].startOffset 
+										+ ", " 
+										+ results[0].endOffset);
+				
+				return results[0];
+					
+			};
 			
 			var moveRange = function moveRange(d, range, event) {
 				
-//				var x = event.x  - layoutConfiguration.margins.left;
-				var x = event.x;
-				var y = 0;
-				
-				var transform = "translate(" + x + ", " + y + ")";
-				
-				d.atOffset = convertCoordinatesToSeriesOffset(x);
-				d.transform = transform;
-				d.startOffset = d.atOffset;
-				d.endOffset = convertCoordinatesToSeriesOffset(x+d.width);
-				
-				range.attr("transform", transform);
-				
-				d.x = x;
-				
-				d.onPositionUpdated.fireHandlers(d);
+				if (isDragging) {
+					
+//					var x = event.x  - layoutConfiguration.margins.left;
+					var x = (event.x ? event.x : convertSeriesOffsetToCoordinate(d.atOffset));
+					var y = 0;
+
+					console.log("MultipleSubrangeSelector::moveRange called: " 
+									+ d.id 
+									+ ", @(" 
+									+ x 
+									+ ", " 
+									+ y 
+									+ "), width: " 
+									+ d.width 
+									+ ", which should amount to " 
+									+ convertCoordinatesToSeriesOffset(d.width));
+					
+					var transform = "translate(" + x + ", " + y + ")";
+					
+					d.atOffset = convertCoordinatesToSeriesOffset(x);
+					d.transform = transform;
+					d.startOffset = d.atOffset;
+					d.endOffset = convertCoordinatesToSeriesOffset(x+d.width);
+					
+					range.attr("transform", transform);
+					
+					d.x = x;
+					
+					fireRangeUpdate = (fireRangeUpdate 
+										|| ((oldOffsets[0] != d.startOffset)
+												|| (oldOffsets[1] != d.endOffset)));
+					
+					if (fireRangeUpdate){
+					
+						oldOffsets[0] = d.startOffset;
+						oldOffsets[1] = d.endOffset;
+					} 
+					
+					console.log("MultipleSubrangeSelector::moveRange will " + (fireRangeUpdate ? "" : "not ") + "be firing the range update event."); 				
+				}
 				
 				return;
 			};
@@ -641,19 +685,35 @@ function loadMultipleSubrangeSelector() {
 			
 			var dragMove = function dragMove(d) {
 				
-				var range = d3.select(convertIdToIdSelector("rangeSelections_" + d.id));
-				var resizing = (range.attr("resizing") == "true");
-				
-				if (resizing) {
+				if (isDragging) {
 					
-					d.resizeRange(d, range, d3.event);
-				} else {
+					var range = d3.select(convertIdToIdSelector("rangeSelections_" + d.id));
+					var resizing = (range.attr("resizing") === "true");
 					
-					moveRange(d, range, d3.event);
+					if (resizing) {
+						
+						d.resizeRange(d, range, d3.event);
+					} else {
+						
+						moveRange(d, range, d3.event);
+					}
+					
+					fixToolTipMessage(d);
+					
+					console.log("MultipleSubrangeSelector::dragMove width: " 
+							+ d.width
+							+ ", width as Offset: "
+							+ convertCoordinatesToSeriesOffset(d.width)
+							+ ", originalWidth: " 
+							+ d.originalWidth 
+							+ ", startOffset: " 
+							+ d.startOffset 
+							+ ", endOffset: " 
+							+ d.endOffset 
+							+ ", resizing: " 
+							+ resizing);					
+					
 				}
-				
-				fixToolTipMessage(d);
-				
 				return;
 			};
 			
@@ -674,6 +734,10 @@ function loadMultipleSubrangeSelector() {
 									.on("dragstart", function(d) {
 											
 											d3.event.sourceEvent.stopPropagation();
+											
+											isDragging = true;
+											fireRangeUpdate = false;
+											oldOffsets = new Array (-1, -1);											
 
 											toolTip.transition()
 													.style("display", "block")
@@ -684,7 +748,6 @@ function loadMultipleSubrangeSelector() {
 											moveRange(d, range, d.originPoint);
 											
 											d.atOffset = convertCoordinatesToSeriesOffset(d.x);
-//											d.atOffset = convertCoordinatesToSeriesOffset(d.x - layoutConfiguration.margins.left);
 											fixToolTipMessage(d);
 											
 											return;
@@ -708,6 +771,13 @@ function loadMultipleSubrangeSelector() {
 														.style("display", "none")
 														.style("opacity", layoutConfiguration.toolTip.outOpacity);
 										
+										if (fireRangeUpdate) {
+											
+											d.onPositionUpdated.fireHandlers(d);
+										}
+										
+										fireRangeUpdate = false;
+										isDragging = false;
 										return;
 									});
 
@@ -949,6 +1019,10 @@ function loadMultipleSubrangeSelector() {
 										.on("mousedown", function(d) {
 												var t = d3.select(convertIdToIdSelector("rangeSelections_" + element.id));
 												
+												fireRangeUpdate = false;
+												isDragging = true;
+												oldOffsets = new Array (-1, -1);											
+
 												t.attr("resizing", true);
 												
 												d3.select(this).attr("fill", 
@@ -976,6 +1050,7 @@ function loadMultipleSubrangeSelector() {
 																		return results;
 																	});
 													
+													
 													var eastResizeContainer = d3.select(convertIdToIdSelector(
 																				"er_" + d.id)).node().parentNode;
 													d3.select(eastResizeContainer).attr("transform", "translate(" 
@@ -991,13 +1066,30 @@ function loadMultipleSubrangeSelector() {
 												return;
 												
 											})
+										.on("mousemove", dragMove)
 										.on("mouseup", function(d){
 											
-											d3.select(this).attr("fill", 
-													layoutConfiguration.rangeBrush.rangeColor)
-											.attr("fill-opacity", 
-													layoutConfiguration.rangeBrush.rangeOpacity);
-							
+														var t = d3.select(convertIdToIdSelector("rangeSelections_" + element.id));
+														t.attr("resizing", false);
+											
+														d3.select(this).attr("fill", 
+																				layoutConfiguration.rangeBrush.rangeColor)
+															.attr("fill-opacity", 
+																	layoutConfiguration.rangeBrush.rangeOpacity);
+										
+														if (fireRangeUpdate) {
+															
+															console.log("wr-resize-handle::mouseup firing event....");
+															
+															d.onPositionUpdated.fireHandlers(d);
+														} else {
+															
+															console.log("wr-resize-handle::mouseup not firing event....");
+														}
+														
+														fireRangeUpdate = false;
+														isDragging = false;
+														
 												return;
 											});
 				
@@ -1103,6 +1195,10 @@ function loadMultipleSubrangeSelector() {
 																
 																	var t = d3.select(convertIdToIdSelector("rangeSelections_" + element.id));
 			
+																	fireRangeUpdate = false;
+																	isDragging = true;
+																	oldOffsets = new Array (-1, -1);											
+
 			        												t.attr("resizing", true);
 			        												
 			        												d3.select(this).attr("fill", 
@@ -1129,27 +1225,51 @@ function loadMultipleSubrangeSelector() {
 //					        														console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning: " + results);
 					        														return results;
 					        													});
-			        													var eastResizeContainer = d3.select(convertIdToIdSelector("er_" + d.id)).node().parentNode;
+			        													var eastResizeContainer = d3.select(convertIdToIdSelector(
+																				"er_" + d.id)).node().parentNode;
 			        													d3.select(eastResizeContainer).attr("transform", "translate(" 
-			        																		+ (d.width 
-			        																				+ layoutConfiguration.rangeBrush.resizeHandleWidth) 
-			        																		+ ", 0)"); 
-			
+																				+ (d.width 
+																					+ layoutConfiguration.rangeBrush.resizeHandleWidth) 
+																				+ ", 0)"); 
+	
+			        													moveRange(d, range, d.originPoint);			        													
+
+//			        													var x = event.x;
+//			        													d.atOffset = convertCoordinatesToSeriesOffset(x);
+////			        													d.transform = transform;
+//			        													d.startOffset = d.atOffset;
+//			        													d.endOffset = convertCoordinatesToSeriesOffset(x+d.width);
+//			        													
 			        													return;
 			        												};
 			        												
 			        												return;
 																})
+														.on("mousemove", dragMove)
 														.on("mouseup", function(d){
+															
+																var t = d3.select(convertIdToIdSelector("rangeSelections_" + element.id));
+																t.attr("resizing", false);
 																
 																d3.select(this).attr("fill", 
-																		layoutConfiguration.rangeBrush.rangeColor)
-																.attr("fill-opacity", 
-																		layoutConfiguration.rangeBrush.rangeOpacity);
-												
+																						layoutConfiguration.rangeBrush.rangeColor)
+																		.attr("fill-opacity", 
+																				layoutConfiguration.rangeBrush.rangeOpacity);
+													
+																	if (fireRangeUpdate) {
+																		
+																		console.log("er-resize-handle::mouseup firing event....");
+																		
+																		d.onPositionUpdated.fireHandlers(d);
+																	} else {
+																		
+																		console.log("er-resize-handle::mouseup not firing event....");
+																	}
+																	
+																	fireRangeUpdate = false;
+																	isDragging = false;
 																	return;
 																});
-;
 					
 					return;
 				});
@@ -1818,14 +1938,14 @@ function loadMultipleSubrangeSelector() {
 								.domain(d3.extent(timeSeriesDomain, layoutConfiguration.rangeAccessor));
 				var line0 = d3.svg.line()
 								.interpolate("linear")
-									.x(function (d) {
+									.x(function (xDataValue) {
 										
-											var results = timeSeriesScale(d.x); 
+											var results = timeSeriesScale(xDataValue.x); 
 											return results; 
 										})
-									.y(function (d) {
+									.y(function (yDataValue) {
 										
-											var results = yScale(d.us); 
+											var results = yScale(yDataValue.us); 
 //											console.log("MultipleSubrangeSelector[" + new Error().lineNumber + "] returning (y): " + results + " for: " + d.us);
 											return results;
 										});
@@ -1882,7 +2002,7 @@ function loadMultipleSubrangeSelector() {
 				svg.append("g")
 						.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 											"multiplesubrangeselector_xAxis"))
-						.attr("class", "x axis")
+						.attr("class", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "xaxis"))
 						.attr("transform", function (a) { 
 							var results = "translate(0, " + elementHeight + ")";
 //							var results = "translate(" 
@@ -2049,7 +2169,8 @@ function loadMultipleSubrangeSelector() {
 					DragMove: dragMove,
 					ActivateEventEditor: rollOutEventEditor,
 					ActivateRangeEditor: rollOutRangeEditor,
-					UpdateSubrange: updateSubrange
+					UpdateSubrange: updateSubrange,
+					RangeValues: fetchRangeValue
 				};
 			var statics = {};
 			

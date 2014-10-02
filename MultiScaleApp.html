@@ -9,6 +9,7 @@
 		<script type="text/javascript" src="./Dependencies/d3.js"></script>
 
 		<script type="text/javascript" src="Utilities.js" defer="defer"></script>
+		<script type="text/javascript" src="CheckListwithComboBox.js" defer="defer"></script>		
 		<script type="text/javascript" src="ComplexDropDown.js" defer="defer"></script>
 		<script type="text/javascript" src="TemporalNodeGraph.js" defer="defer"></script>
 		<script type="text/javascript" src="MultipleSubrangeSelector.js" defer="defer" ></script>
@@ -19,6 +20,7 @@
 		<script type="text/javascript" src="ScatterChart.js" defer="defer"></script>
 		
 		<link rel="stylesheet" type="text/css" href="./RangeGradients.css" />
+		<link rel="stylesheet" type="text/css" href="./MultiScaleApp.css" />
 		
 	</head>
 	<body>
@@ -31,7 +33,7 @@
 		<div id="dynamicDisplayContainer" 
 				style="position: absolute;
 						top: 300px; left: 10px; 
-						width: 1600px; height: 1000px; ">
+						width: 2320px; height: 1000px; ">
 		</div>
 	
 	
@@ -39,8 +41,17 @@
 		
 			$(document).ready(function pageSetup() {
 				
-				var domainAccessor = function accessDomainValues(d) { return d.x; };
-				var rangeAccessor = function accessRangeValues(d) { return d.us; }
+				var domainAccessor = function accessDomainValues(d) {
+					
+// 						var results = new Date(d.date);
+						var results = d.x;
+						return results; 
+					};
+				var rangeAccessor = function accessRangeValues(d) {
+					
+						var results = d.us;
+						return results; 
+					}
 				
 				loadUtilitiesModule();
 				loadMultipleSubrangeSelector();
@@ -129,10 +140,10 @@
 				var tngLayout = {
 						containerProperties: {
 							top: 50,
-							left: 0,
-							width: 500,
-							height: 500,
-							borders: "1px solid black",
+							left: 720,
+							width: 1500,
+							height: 1500,
+							borders: "1px solid lightgray",
 							backgroundColor: "white",
 							padding: 5,
 							margin: 5
@@ -140,7 +151,7 @@
 					titleProperties: {
 						labelPrefix: "Week: ",
 						top: "0px",
-						left: "0px",
+						left: "720px",
 						textAlignment: "center"
 					},
 					margins: {
@@ -170,19 +181,164 @@
 						height: 20,
 						padding: 2,
 						margin: 2,
-						borders: "1px solid black",
+						periodDuration: (1000*60*60*24*7),
+						borders: "1px solid lightgray",
 						backgroundColor: "mintcream",
 						backBackgroundColor: "hotpink",
 						backBorders: "2px solid maroon",
 						forwardBackgroundColor: "powderblue",
 						forwardBorders: "2px solid darkblue"
-					}
+					},
+					additionalDataHandling: {
+						dataUrl:  "employees_id.csv",
+						downloadMapper: new Array( { targetName: "id", sourceName: "V1" },
+													{ targetName: "name", sourceName: "V2"}),
+						dataMappers: { 
+										key: "id",
+										mappers: new Array( { targetName: "name", sourceName: "name", initializer: function (i) { return "unknown usp: " + i; } })
+									}
+						}
 				};
 				var cmLayout = {
+						checkListProperties: {
+							containerProperties: {
+										x: "0",
+										y: "0",
+										width: "700",
+										backgroundColor: "white",
+										strokeColor: "black",
+										strokeWidth: 1
+								},								
+							dataSets: new Array({ 
+													name: "Connected Components",
+													dataId: 513,
+													yValue: new Array('cc'),
+													xValueAccessor: function (d)
+														{ 
+															return d[0]; 
+														}
+												},
+												{
+													name: "Density",
+													dataId: 513,
+													yValue: new Array('density'),
+													xValueAccessor: function (d)
+														{ 
+															return d[0]; 
+														}
+												},
+												{
+													name: "Average Clustering Coefficient", 
+													dataId: 513,
+													yValue: new Array('transitivity'),
+													xValueAccessor: function (d)
+														{ 
+															return d[0]; 
+														}
+												},
+												{
+													name: "Assortativity",
+													dataId: 513,
+													yValue: new Array('assortativity'),
+													xValueAccessor: function (d)
+														{ 
+															return d[0]; 
+														}													
+												},
+												{
+													name: "Us",
+													dataId: 513,
+													yValue: new Array('us'),
+													xValueAccessor: function (d)
+														{ 
+															return d[0]; 
+														}													
+												},
+												{
+													name: "Them",
+													dataId: 513,
+													yValue: new Array('them'),
+													xValueAccessor: function (d)
+														{ 
+															return d[0]; 
+														}													
+												}),
+							chartTypes: new Array("analog", 
+											"digital", 
+											"horizon", 
+											"scatter"),
+							optionProperties: {
+								x: 1,
+								y: 1,
+								width: 698,
+								height: 50,
+								strokeColor: "black",
+								strokeWidth: 1,
+								fillColor: "none",
+								textColor: "black",
+								fontFamily: "Times New Roman",
+								fontSize: "24pt",
+								labelPosition: { x: "60", y: "35" },
+								translate: { 	
+												x: 0, 
+												y: function(index) { 
+														return cmLayout.checkListProperties.optionProperties.height * index; 
+													}
+											},
+								checkBoxProperties: {
+												x: "5", 
+												y: "5",
+												width: "40",
+												height: "40",
+												fillColor: "white",
+												strokeColor: "black",
+												strokeWidth: "3"
+										},
+								comboBoxProperties: {
+												itemsContainerProperties: {												
+														x: "500",
+														y: "5",
+														width: "150",
+														height: "40",
+														fillColor: "none",
+														strokeColor: "black",
+														strokeWidth: "3"								
+													},
+												dropDownMenuProperties: {
+														openWidth: 800,
+														closedWidth: 150,
+														x: "500",
+														y: "5",
+														width: "150",
+														height: "45",
+														fillColor: "mintcream",
+														strokeColor: "black",
+														strokeWidth: "3"													
+													},
+												dropDownMenuOptionsProperties: {
+														xOffset: 505,
+														y: "35",
+														height: "40",
+														strokeColor: "black",
+														itemWidth: "150",
+														optionWidth: "200"
+												},
+												dropDownMenuButtonProperties: {
+														x: "655",
+														y: "5",
+														width: "40",
+														height: "40",
+														fillColor: "lightgrey",
+														strokeColor: "darkgrey",
+														strokeWidth: "3"												
+												}
+										}
+								}
+							},
 						containerProperties: {
-							top: 0,
-							left: 0,
-							width: 900,
+							top: 20,
+							left: 720,
+							width: 1900,
 							height: 300,
 							borders: "none",
 							backgroundColor: "white",
@@ -198,14 +354,14 @@
 							verticalMargins: 80
 						},
 						graphRegion: {
-							width: 800,
-							height: 300,
+							width: 1800,
+							height: 500,
 							legendOffset: 45,
 							textAnchor: "end",
 							duration: 700,
 							hoverLine: {
-								x1: 20,
-								x2: 20,
+								x1: 720,
+								x2: 720,
 								y1: 2,
 								y2: 320,
 								strokeWidth: 1,
@@ -213,16 +369,16 @@
 								hiddenOpacity: 1e-6,
 								displayedOpacity: 0.85
 							},
-							defaultChartHeight: 100,
+							defaultChartHeight: 500,
 							xAxisXTranslate: function () {
 								
-								return cmLayout.margins.verticalMargins 
-								+ cmLayout.containerProperties.padding;
- 
+								return cmLayout.containerProperties.left 
+											+ cmLayout.margins.verticalMargins 
+											+ cmLayout.containerProperties.padding;
 							}
 						},
 						analog: {
-							chartHeight: 100,
+							chartHeight: 500,
 							gap: 30,
 							width: function () {
 								
@@ -232,12 +388,13 @@
 							},
 							graphTransform: function () {
 								
-								return cmLayout.margins.verticalMargins 
+								return cmLayout.containerProperties.left
+											+ cmLayout.margins.verticalMargins 
 											+ cmLayout.containerProperties.padding;
 							}
 						},
 						digital: {
-							chartHeight: 20,
+							chartHeight: 50,
 							width: function () {
 							
 								return (cmLayout.containerProperties.width 
@@ -245,12 +402,13 @@
 												- cmLayout.containerProperties.padding));
 							},
 							graphTransform: function () {
-								return cmLayout.margins.left 
+								return cmLayout.containerProperties.left
+											+ cmLayout.margins.left 
 											- cmLayout.containerProperties.padding;
 								}
 						},
 						horizon: {
-							chartHeight: 100,
+							chartHeight: 500,
 							domain: [-1, 0, 0, 1],
 							range: ["#08519c", "#bdd7e7", "#bad4b3", "#006d2c"],
 							gap: 30,
@@ -262,12 +420,13 @@
 												- cmLayout.containerProperties.padding));
 							},
 							graphTransform: function () {
-								return cmLayout.margins.left 
+								return cmLayout.containerProperties.left
+											+ cmLayout.margins.left 
 											- cmLayout.containerProperties.padding;
 								}
 						},
 						scatter: {
-							chartHeight: 100,
+							chartHeight: 500,
 							radius: 4,
 							gap: 30,
 							width: function () {
@@ -278,7 +437,8 @@
 							},
 							graphTransform: function () {
 								
-								return cmLayout.margins.verticalMargins 
+								return cmLayout.containerProperties.left
+											+ cmLayout.margins.verticalMargins 
 											+ cmLayout.containerProperties.padding;
 							}
 						}
@@ -287,12 +447,233 @@
 				
 				var createdComponents = { count: 0 };
 				
+				var updateDisplay = function (data) {
+					
+					var startOffset = Math.floor(data.startOffset);
+					var endOffset = Math.floor(data.endOffset);
+					
+					var request = "ss_dump?start=" + startOffset
+											+ "&end=" + endOffset;
+
+					console.log("MultiScaleApp::updateDisplay about to request: '" + request + "'");
+					
+					d3.json(request, function (error, subrange) {
+						
+						if (error) {
+							
+							console.warn(error);
+						} else {
+							
+							console.log("MultiScaleApp::updateDisplay::json-callback called with dataSet of size: " + subrange.length);
+							
+							// These Identifiers should be using the GoUtilities for 
+							// creating instance unique identifiers, classes and selectors.
+							// GoUtilities.GenerateComponentSpecificIdentifiers(
+							var tngControlPrefix = "TNG_" + createdComponents[data.id].idSuffix;
+							var cmControlPrefix = "CM_" + createdComponents[data.id].idSuffix;
+							
+							var addedControls = createdComponents[data.id]["addedControls"];
+							
+							if (!addedControls){
+								
+								console.log("MultiScaleApp::updateDisplay::json-callback building GUI.");
+							
+								addedControls = {};
+								
+								createdComponents[data.id]["addedControls"] = addedControls;
+								createdComponents[data.id]["addedControlIds"] = { cmId: cmControlPrefix, tngId: tngControlPrefix };
+
+								var temporalComponentsContainer = "temporalcontainer_" + createdComponents[data.id].idSuffix;
+								var topOffset = createdComponents[data.id].idSuffix * 675;  
+								
+								var tcc = d3.select("#dynamicDisplayContainer").append("div")
+													.attr("id", temporalComponentsContainer)
+													.style("position", "absolute")
+													.style("top", topOffset + "px")
+													.style("height", "650px")
+													.style("width", cmLayout.containerProperties.width 
+																		+ tngLayout.containerProperties.width
+																		+ "px");
+								
+								tcc.append("h3")
+												.style("text-align", "left")
+												.style("text-decoration", "underline")
+												.text("Subrange: " + data.id);
+								
+								var tngContainer = "tng_child_" + createdComponents[data.id].idSuffix
+								var cmContainer = "cm_child_" + createdComponents[data.id].idSuffix
+								
+								tcc.append("div").attr("id", cmContainer)
+											.style("position", "absolute")
+											.style("top", "50px")
+											.style("left", "0px");
+								tcc.append("div").attr("id", tngContainer)
+											.style("position", "absolute")
+											.style("top", "0px")
+											.style("left", cmLayout.containerProperties.width
+																+ cmLayout.margins.verticalMargins
+																+ "px");
+								
+								tngContainer = "#" + tngContainer;
+								cmContainer = "#" + cmContainer;
+								console.log(d3.select(tngContainer));
+								console.log(d3.select(cmContainer));
+								
+								cmLayout["subrangeSelector"] = subrangeSelectorControl;
+								
+								addedControls["cm"] = new cm(cmControlPrefix, cmContainer, cmLayout);
+								
+								addedControls["cm"].AddChartClickedEventHandler(cmControlPrefix, chartClickedHandler);
+								
+								addedControls["tng"] = new tng(tngControlPrefix, tngContainer, tngLayout);
+								
+								addedControls["tng"].AddStepBackEventHandler(function () {
+									
+									var projectedPeriodOffset = (addedControls.tng.PeriodOffset - 1);
+									console.log ("MutliScaleApp::StepBackHandler called: projected period offset: " 
+														+ projectedPeriodOffset 
+														+ ", Start Offset Limit: " 
+														+ startOffset);
+									
+									if (startOffset <= projectedPeriodOffset) {
+											
+											var date = new Date(addedControls.tng.PeriodLabel);
+											var update = new Date(date.getTime() - tngLayout.scrubberProperties.periodDuration);
+											
+											console.log("MutliScaleApp::StepBackHandler Period Label: " 
+															+ date.toUTCString() 
+															+ ", updated to: " 
+															+ update.toUTCString() 
+															+ ", period duration: " 
+															+ tngLayout.scrubberProperties.periodDuration);
+											
+											var month = "0" + (update.getMonth() + 1);
+											var mon = month.slice(-2);
+											var dateOfMonth = "0" + (update.getDate() + 1);
+											var DoM = dateOfMonth.slice(-2);
+											addedControls.tng.PeriodLabel = update.getFullYear() + "-" + mon + "-" + DoM;
+											--addedControls.tng.PeriodOffset;
+											
+											fetchNetworkGraph(addedControls, addedControls.tng.PeriodOffset);
+										} else {
+											
+											console.log ("MutliScaleApp::StepBackHandler can't step before selected time subrange, which started at: " + startOffset);
+										}
+	
+										return;
+									});
+								addedControls["tng"].AddStepForwardEventHandler(function () {
+
+									var projectedPeriodOffset = (addedControls.tng.PeriodOffset + 1);
+									console.log ("MutliScaleApp::StepForwardsHandler called: projected period offset: " 
+														+ projectedPeriodOffset 
+														+ ", End Offset Limit: " 
+														+ endOffset);
+									
+									if (projectedPeriodOffset <= endOffset) {
+										
+										var date = new Date(addedControls.tng.PeriodLabel);
+										var update = new Date(date.getTime() + tngLayout.scrubberProperties.periodDuration);
+										
+										console.log("MutliScaleApp::StepBackHandler Period Label: " 
+														+ date.toUTCString() 
+														+ ", updated to: " 
+														+ update.toUTCString() 
+														+ ", period duration: " 
+														+ tngLayout.scrubberProperties.periodDuration);
+										
+										var month = "0" + (update.getMonth() + 1);
+										var mon = month.slice(-2);
+										var dateOfMonth = "0" + (update.getDate() + 1);
+										var DoM = dateOfMonth.slice(-2);
+										addedControls.tng.PeriodLabel = update.getFullYear() + "-" + mon + "-" + DoM;
+										++addedControls.tng.PeriodOffset;
+										
+										fetchNetworkGraph(addedControls, addedControls.tng.PeriodOffset);
+
+									} else {
+										
+										console.log ("MutliScaleApp::StepForwardsHandler can't step after selected time subrange.");
+									}
+									
+									return;
+								});
+								
+								addedControls["tng"].AdditionalNodeDataURL = tngLayout.additionalDataHandling.dataUrl;
+										
+								addedControls["tng"].AdditionalNodeDataMapper = tngLayout.additionalDataHandling.dataMapper;
+																
+							} else {
+								
+								console.log("MultiScaleApp::updateDisplay::json-callback needs to update subrange.");
+								var ext = d3.extent(subrange, function (d) {
+													return d.date;
+												});
+								console.log("MultiScaleApp::updateDisplay::json-callback needs to update subrange for: " + data.id  + ", subrange extents: " + ext[0]  + " thru " + ext[1]);
+							}
+							
+							addedControls["cm"].AddDataSet(cmControlPrefix, subrange);
+							addedControls["cm"].AddRangeId(cmControlPrefix, data.id);
+						}
+						
+						return;
+					});
+					
+					return;
+				};
+				
 				var subrangeMovedHandler = function subrangeMoved(data) {
 					
 					console.log("User moved range: " + data.id);
 					
-					// TODO: Add real logic...
+					updateDisplay(data);
 					
+					return;
+				};
+				
+				var fetchNetworkGraph = function fetchNetworkGraph(addedControls, dateParameter) {
+					
+					var request = "./network_retrieval?date=" + dateParameter;
+
+					console.log("MultiScaleApp::chartClickEventHandler about to make this request: '" + request + "'");
+					
+					d3.json(request, function (error, nodeNetwork) {
+						
+						if (error) {
+							
+							console.warn(error);
+						} else {
+							
+							console.log("MultiScaleApp::chartClickEventHandler::json-callback called...");							
+							
+							addedControls.tng.UpdateDataSet(nodeNetwork);
+						}
+						
+						return;
+					});
+					
+				}
+				
+				var chartClickedHandler = function chartClickEventHandler(sender, x, graphIdx) {
+					
+					console.log("MultiScaleApp::chartClickEventHandler called...");
+					
+					console.log("User clicked at: x = " + x + ", which is near data point " + graphIdx);
+					
+					var data = subrangeSelectorControl.RangeValues(sender.rangeId);						
+					var addedControls = createdComponents[sender.rangeId].addedControls;
+					
+					if (graphIdx < sender.dataSet.length) {
+						
+						addedControls.tng.PeriodLabel = sender.dataSet[graphIdx].date;
+						addedControls.tng.PeriodOffset = sender.dataSet[graphIdx].x;
+
+						fetchNetworkGraph(addedControls, sender.dataSet[graphIdx].x);
+					} else {
+						
+						console.log("MultiScaleApp::chartClickEventHandler nearest point outside of data set range????");
+					}						
+
 					return;
 				};
 				
@@ -309,70 +690,7 @@
 					// In the callback to d3.json call - create a Time series and Node Graph components.
 				
 					createdComponents[data.id] = { data: data, idSuffix: createdComponents.count++ };
-					var request = "ss_dump?start=" + Math.floor(data.startOffset) + "&end=" + Math.floor(data.endOffset);
-					
-					d3.json(request, function (error, subrange) {
-						
-						if (error) {
-							
-							console.warn(error)
-						} else {
-							
-							var addedControls = {};
-							
-							createdComponents[data.id]["addedControls"] = addedControls;
-							
-							var tngControlPrefix = "TNG_" + createdComponents[data.id].idSuffix;
-							var cmControlPrefix = "CM_" + createdComponents[data.id].idSuffix;
-							
-							var temporalComponentsContainer = "temporalcontainer_" + createdComponents[data.id].idSuffix;
-							var topOffset = createdComponents[data.id].idSuffix * 675;  
-							
-							var tcc = d3.select("#dynamicDisplayContainer").append("div")
-									.attr("id", temporalComponentsContainer)
-									.style("position", "absolute")
-									.style("border", "1px solid black")
-									.style("top", topOffset + "px")
-									.style("height", "650px")
-									.style("width", "1600px");
-							
-							tcc.append("h3")
-											.style("text-align", "left")
-											.style("text-decoration", "underline")
-											.text("Subrange: " + data.id);
-							
-							var tngContainer = "tng_child_" + createdComponents[data.id].idSuffix
-							var cmContainer = "cm_child_" + createdComponents[data.id].idSuffix
-							
-							tcc.append("div").attr("id", cmContainer)
-										.style("position", "absolute")
-										.style("top", "50px")
-										.style("left", "0px");
-							tcc.append("div").attr("id", tngContainer)
-										.style("position", "absolute")
-										.style("top", "0px")
-										.style("left", "1000px");
-							
-							tngContainer = "#" + tngContainer;
-							cmContainer = "#" + cmContainer;
-							console.log(d3.select(tngContainer));
-							console.log(d3.select(cmContainer));
-							
-							addedControls["cm"] = new cm(cmControlPrefix, cmContainer, cmLayout);
-							
-							addedControls["tng"] = new tng(tngControlPrefix, tngContainer, tngLayout);
-							
-							// Need to add logic to push the subrange into the Chart appropriately...
-							
-							console.log("CreateSubrange callback added components: ");
-							console.log(createdComponents[data.id]);
-							
-							console.log("CreateSubrange callback received: ");
-							console.log(subrange);
-						}
-					});
-					
-					
+					updateDisplay(data)
 					return;
 				};
 				
@@ -396,10 +714,10 @@
 							});
 					
 					container.remove();
-					
+
+					var cmId = createdComponents[data.id].addedControlIds.cmId;
+					createdComponents[data.id].addedControls.cm.RemoveChart(cmId);
 					delete createdComponents[data.id];
-					
-					--createdComponents.length;
 					
 					return;
 				};

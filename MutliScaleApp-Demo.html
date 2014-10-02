@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Multiscale Time Series Application Demo Page</title>
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		
+		<style type="text/css">
+			h3.tabHeader {
+				background-color: silver;
+			}
+		</style>
+		
+	</head>
+	<body>
+		<div id="rangeSelector">
+			<h3>Range Selector</h3>
+			<div><img alt="Subrange Selector" src="images/TimeRangeSelector.png"></div>
+		</div>
+		<div id="SubRangeContainer" >
+			<div id="timeSeries_1" >
+				<h3 class="tabHeader">Time Series Graph</h3>
+				<div style="margin: 5px; ">
+					<img alt="Time Series Graph" src="images/TimeSeriesGraph.png"> 
+				</div>
+			</div>
+			<div id="nodeGraph_1" >
+				<h3  class="tabHeader">Temporal Node Graph</h3>
+				<div style="margin: 5px; ">
+					<img alt="Node Graph" src="images/TNG.png">
+				</div>
+			</div>
+			<div id="graphene_1" >
+				<h3 class="tabHeader">Graphene UI</h3>
+				<div style="margin: 5px; ">
+					<img alt="Graphene UI" src="images/Graphene.png">
+				</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+		
+			var sectionToggle = function () {
+				
+				var displayArea = $("div", this);
+				
+				displayArea.each(function () {
+					
+					var self = $(this);
+					
+					if (self.is(":hidden")) {
+						
+						self.slideDown("slow");
+					} else {
+						
+						self.hide();
+					}
+				});
+				
+				return;
+			};
+			
+			
+			$(document).ready(function pageSetup() {
+				
+				$("#timeSeries_1").hide()
+									.click(sectionToggle);
+				
+				$("#nodeGraph_1").hide()
+									.click(sectionToggle);
+				
+				$("#graphene_1").hide()
+									.click(sectionToggle);
+					
+								
+				$("#rangeSelector").click(function (){
+					
+					$("#timeSeries_1").slideDown();
+
+					$("#nodeGraph_1").slideDown();
+					
+					$("#graphene_1").slideDown();
+						
+					return;
+				});
+			});
+		</script>
+	</body>
+</html>

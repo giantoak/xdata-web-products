@@ -52,98 +52,271 @@ function loadChartManager() {
 						|| (!window.utilities)) {
 						
 					loadUtilitiesModule();
-				}				
+				}			
 				
+				if ((isEmpty(window.controls))
+						|| (!window.controls)
+						|| (!window.controls.CheckListwithComboBox)) {
+					
+					loadCheckListwithComboBox();
+				}
+				
+				
+				// These can be 'class' variables
+				var monthNames = new Array ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
 				var component = null;
 				// Define local alias to the Utilities Namespace.
 				var GoUtilities = window.utilities;	
 				var GoAbstractControls = window.utilities.controls;
 				var GoChartControls = window.controls.TimeSeriesCharts;
-				var prefix = null;
-				var layoutConfiguration = null;
-				var svg = null;
-				var chartCanvas = null;
-				var xScale = null;
-				var xDomain = new Array(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY);
-				var hoverLine = null;
-				var graphs = new Array();
-				var monthNames = new Array ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-				var activePlayHead = false;
-				var elementWidth = null;
-				var elementHeight = null;
-				var logChartHeight = 100;
-				var diChartHeight = 20;
-				var color = d3.scale.category10();
-				var timeLegend = null;
-				var brush = null;
+				var GoControls = window.controls;
+
+				// These need to be instance scoped
+				var instanceData = {};
 				
-				var chartClickedEventManagement = new GoAbstractControls.EventHandlerManagement();
+//				var prefix = null;
+//				var layoutConfiguration = null;
+//				var svg = null;
+//				var chartCanvas = null;
+//				var xScale = null;
+//				var xDomain = new Array(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY);
+//				var hoverLine = null;
+//				var graphs = new Array();
+//				var activePlayHead = false;
+//				var elementWidth = null;
+//				var elementHeight = null;
+//				var logChartHeight = 100;
+//				var diChartHeight = 20;
+//				var color = d3.scale.category10();
+//				var timeLegend = null;
+//				var brush = null;
+//				var dataSet = null;				
+//				var chartClickedEventManagement = new GoAbstractControls.EventHandlerManagement();
+//				
 				
-				var addChartClickedEventHandler = function addChartClickEventHandler(handler) {
-					
-					chartClickedEventManagement.addHandler(handler);
+				var removeChart = function removeChart(owner) {
+				
+					console.log("ChartManager::removeChart called with " 
+							+ owner);
+								
+					delete instanceData[owner];
 					
 					return;
 				};
 				
-				var removeChartClickeEventHandler = function removeChartClickedEventHandler(handler) {
+				var addDataSet = function addDataSet(owner, d) {
 					
-					chartClickedEventManagement.removeHandler(handler);
+					console.log("ChartManager::addDataSet property setter called with " + owner + ", displaying: " + instanceData[owner].graphs.length + " graphs.");								
+					console.log(d);
+					console.log(instanceData[owner].graphs);
+					
+					instanceData[owner].dataSet = d;
+					
+					if (instanceData[owner].graphs.length) {
+						
+						dups = instanceData[owner].graphs.slice(0);
+						instanceData[owner].graphs = new Array();
+						instanceData[owner].xDomain[0] = Number.POSITIVE_INFINITY;
+						instanceData[owner].xDomain[1] = Number.NEGATIVE_INFINITY;		
+						
+						dups.forEach(function (graph) {
+							
+								graph.data = d;
+								graph.updated = true;
+
+								addGraph(owner, graph);
+							});
+						
+						render(owner);
+					}
 					
 					return;
 				};
 				
+				var addRangeId = function addRangeId(owner, rangeId) {
+					
+					console.log("ChartManager::addRangeId property setter called: " + rangeId);
+					
+					instanceData[owner]["rangeId"] = rangeId;
+					
+					return;
+				};
+				
+				var addChartClickedEventHandler = function addChartClickEventHandler(owner, handler) {
+					
+					instanceData[owner].chartClickedEventManagement.addHandler(handler);
+					
+					return;
+				};
+				
+				var removeChartClickeEventHandler = function removeChartClickedEventHandler(owner, handler) {
+					
+					instanceData[owner].chartClickedEventManagement.removeHandler(handler);
+					
+					return;
+				};
+
+				var chartTypeChangedHandler = function chartChangedHandler(sender, data, selectedOption) {
+					
+					console.log("ChartManager::chartChangedHandler called...");
+					console.log(sender);
+					console.log(data);
+					console.log(selectedOption);
+					
+					var owner = sender.owner;
+
+					removeGraph(owner, data.name);
+
+					var chartConfiguration = { 
+							id: data.name, 
+							type: selectedOption, 
+							name: data.name + "_" + selectedOption, 
+							dataId: data.dataId, 
+							yVal: data.yValue, 
+							data: instanceData[owner].dataSet.slice(0),
+							updated: true
+						};
+
+					addGraph(owner, chartConfiguration);
+					
+					render(owner);
+					
+					return;
+				};
+				
+				var dataSetChangedHandler = function dataSetChangedHandler(sender, data, isActive, chartType) {
+										
+					console.log("ChartManager::dataSetChangedHandler called...");
+					console.log(sender);
+					console.log(data);
+					console.log(isActive);
+					console.log(chartType);
+				
+					var owner = sender.owner;
+			
+					if (isActive) {
+						
+						// Make sure the Chart Manager is actually working with the latest
+						// range of data
+						var rangeData = instanceData[owner].layoutConfiguration
+															.subrangeSelector
+															.RangeValues(instanceData[owner].rangeId);
+						
+						var request = "./ss_dump?start=" + Math.floor(rangeData.startOffset) 
+											+ "&end=" + Math.floor(rangeData.endOffset);
+							
+							console.log("ChartManager::dataSetChangedHandler about to request: '" + request + "'");
+							
+							d3.json(request, function (error, subrange) {
+								
+								if (error) {
+									
+									console.warn(error);
+								} else {
+									
+									console.log("ChartManager::dataSetChangedHandler::json-callback called...");
+									
+									instanceData[owner].dataSet = subrange.slice(0);
+									
+									var ext = d3.extent(instanceData[owner].dataSet, function (d) { 
+														return d.date; 
+													});
+									
+									console.log("ChartManager::dataSetChangedHandler::json-callback dataSet Range of Dates: " 
+														+ ext[0] 
+														+ " thru " 
+														+ ext[1] 
+														+ " for " 
+														+ instanceData[owner].dataSet.length 
+														+ " records.");
+												
+									// Add the Graph to the chart;
+									var chartConfiguration = { 
+																id: data.name, 
+																type: chartType.text(), 
+																name: data.name + "_" + chartType.text(), 
+																dataId: data.dataId, 
+																yVal: data.yValue, 
+																data: instanceData[owner].dataSet.slice(0),
+																updated: true
+															};
+									
+									addGraph(owner, chartConfiguration);
+									
+									// force an update
+									render(owner);
+								}
+								
+								return;
+							});
+					} else {
+						// Remove the Graph from the chart
+						
+						removeGraph(owner, data.name);
+						
+						// force an update
+						render(owner);						
+					}
+					
+					return;
+				};
+
 				var chartClickHandler = function chartClickHandler(d) {
 					
 					console.log("ChartManager::chartClickHandler called...");
+
+					var owner = GoUtilities.FindInstanceData(this);
 					
-					var actualActivePlayHead = activePlayHead;
+					var actualActivePlayHead = instanceData[owner].activePlayHead;
 					
-					activePlayHead = true;
+					instanceData[owner].activePlayHead = true;
 					
 					positionPlayHead(this, true);
 					
-					activePlayHead = actualActivePlayHead;
+					instanceData[owner].activePlayHead = actualActivePlayHead;
 					
 					return;
 				};
 				
 				var chartMouseHoverHandler = function chartMouseHoverHandler() {
 					
-					console.log("ChartManager::chartMouseHoverHandler called...");
+//					console.log("ChartManager::chartMouseHoverHandler called...");
 					
-					if (0 != graphs.length) {
+					var owner = GoUtilities.FindInstanceData(this);
+					
+					if (0 != instanceData[owner].graphs.length) {
 						
 						var mouse = d3.mouse(this);
 						
-						var mX = mouse[0] + layoutConfiguration.margins.left;
-						var mY = mouse[1] + layoutConfiguration.margins.top;
+						var mX = mouse[0] + instanceData[owner].layoutConfiguration.margins.left;
+						var mY = mouse[1] + instanceData[owner].layoutConfiguration.margins.top;
 						
-						if ((mX > 0)
+						if ((mX > instanceData[owner].layoutConfiguration.containerProperties.left)
 								&& (mY > 0)
-									&& (mX < layoutConfiguration.graphRegion.width)) {
+									&& (mX < ( instanceData[owner].layoutConfiguration.containerProperties.left 
+													+ instanceData[owner].layoutConfiguration.graphRegion.width))) {
 							
-							hoverLine.attr("opacity", layoutConfiguration.graphRegion.hoverLine.displayedOpacity);
+							instanceData[owner].hoverLine.attr("opacity", instanceData[owner].layoutConfiguration.graphRegion.hoverLine.displayedOpacity);
 							
-							activePlayHead = true;
+							instanceData[owner].activePlayHead = true;
 							
 						} else {
 							
-							hoverLine.attr("opacity", layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
+							instanceData[owner].hoverLine.attr("opacity", instanceData[owner].layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
 							
-							activePlayHead = false;
+							instanceData[owner].activePlayHead = false;
 						}
 						
-						console.log("ChartManager::chartMouseHoverHandler called with graphs defined with playhead: " 
-								+ (activePlayHead ? "active" : "hidden") + ".");
+//						console.log("ChartManager::chartMouseHoverHandler called with graphs defined with playhead: " 
+//								+ (instanceData[owner].activePlayHead ? "active" : "hidden") + ".");
 						
 					} else {
 						
-						console.log("ChartManager::chartMouseHoverHandler called without any graphs defined.");
+//						console.log("ChartManager::chartMouseHoverHandler called without any graphs defined.");
 						
-						hoverLine.attr("opacity", layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
+						instanceData[owner].hoverLine.attr("opacity", instanceData[owner].layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
 						
-						activePlayHead = false;
+						instanceData[owner].activePlayHead = false;
 					}
 					
 					return;
@@ -151,11 +324,13 @@ function loadChartManager() {
 				
 				var chartMouseOutHandler = function chartMouseOutHandler() {
 					
-					console.log("ChartManager::chartMouseOutHandler called...");
+//					console.log("ChartManager::chartMouseOutHandler called...");
 					
-					hoverLine.attr("opacity", layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
+					var owner = GoUtilities.FindInstanceData(this);
 					
-					activePlayHead = false;
+					instanceData[owner].hoverLine.attr("opacity", instanceData[owner].layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
+					
+					instanceData[owner].activePlayHead = false;
 					
 					return;
 				};
@@ -182,47 +357,53 @@ function loadChartManager() {
 				
 				function positionPlayHead(container, triggerEvent) {
 					
-					console.log("ChartManager::positionPlayHead(" + triggerEvent + ", " + activePlayHead + ")");
+					var owner =  d3.select(container).datum();
 					
-					if (activePlayHead) {
+//					console.log("ChartManager::positionPlayHead(" + triggerEvent + ", " + instanceData[owner].activePlayHead + ")");
+					
+					if (instanceData[owner].activePlayHead) {
 						
 						var mouse = d3.mouse(container);
 						
 						var mX = mouse[0];
 						var mY = mouse[1];
+						var maxX = (instanceData[owner].layoutConfiguration.containerProperties.left 
+											+ instanceData[owner].layoutConfiguration.graphRegion.width);
 						
-						hoverLine.attr("x1", mX).attr("x2", mX);
+						instanceData[owner].hoverLine.attr("x1", mX).attr("x2", mX);
 						
-						if ((mX > 0)
+						if ((mX > instanceData[owner].layoutConfiguration.containerProperties.left)
 								&& (mY > 0)
-									&& (mX < layoutConfiguration.graphRegion.width)) {
+									&& (mX < maxX)) {
 					
-							var dt = xScale.invert(mX);
-							var mapped = graphs.map(function mapper(element, index, arr) {
-								
-								var results = element.map[mX] 
-										? element.map[mX].date 
-												: null;
-								
-								return results;
-							});
+							var dt = instanceData[owner].xScale.invert(mX);
+							var mapped = instanceData[owner].graphs.map(function mapper(element, index, arr) {
+											
+											var results = element.map[mX] 
+															? element.map[mX].x
+																	: 0;
+													
+											return results;
+										});
 							var nearestDateValue = minDistanceDate(mapped, dt);
-							var graphIdsWithDataAtNearestDate = graphs.filter(function filter(element, index) {
-								
-								var mappedData = element.map[mX];
-								var flag = (mappedData 
-												&& (mappedData.date == nearestDateValue));
-								return flag;
-							}).map(function map(filteredData, index) {
-								
-								var mappedData = filteredData.map[mX]; 
-								
-								return mappedData.idx;
-							});
+							var nearestDateIndex = d3.min(instanceData[owner].graphs.filter(function filter(element, index) {
+											
+											var mappedData = element.map[mX];
+											var flag = (mappedData 
+															&& (mappedData.x == nearestDateValue));
+											return flag;
+										}).map(function map(filteredData, index) {
+											
+											var mappedData = filteredData.map[mX]; 
+											
+											return mappedData.idx;
+										}));
 							
-							if (null != nearestDateValue) {
+							if ((null != nearestDateValue)
+									&& ((nearestDateIndex
+											|| (nearestDateIndex == 0)))) {
 								
-								d3.selectAll(".graph").data(graphs, function (d) {
+								d3.selectAll(".graph").data(instanceData[owner].graphs, function (d) {
 									
 									return d.id;
 								}).each (function (d) {
@@ -230,33 +411,49 @@ function loadChartManager() {
 									var g = d3.select(this);
 									var str = "";
 									
-									if (0 <= graphIdsWithDataAtNearestDate.indexOf(d.id)) {
+									if (instanceData[owner].dataSet.length != d.data.length) {
 										
-										var v = d.data[d.map[mX].idx];
-										
-										d.yVal.forEach(function (yDim, i) {
-										
-											str += d.yVal.length == 1 ? v[yDim] : ((0 < i ? ", " : " ") + yDim + ":" + v[yDim]);
-										});
+										instanceData[owner].dataSet = d.data.slice(0);
 									}
 									
-									g.select('.legend').text(d.id + " : " + str);
+									var v = d.data[nearestDateIndex];
+									
+									if (v) {
+										
+										d.yVal.forEach(function (yDim, i) {
+											
+											str += ((d.yVal.length == 1) 
+														? (" " + v[yDim]) 
+														: ((0 < i ? ", " : " ") + yDim + ": " + v[yDim]));
+										});
+									}
+								
+									g.select('.legend').text(d.id + ": " + str);
+									
+									return;
 								});
 
 								var ndv = new Date(nearestDateValue);
 								var date = ndv.getDate();
 								var month = ndv.getMonth();
-								timeLegend.text(date + " " + monthNames[month]);
-								hoverLine.attr("x1", mX).attr("x2",mX);
+								instanceData[owner].timeLegend.text(date + " " + monthNames[month]);
+								instanceData[owner].hoverLine.attr("x1", mX).attr("x2",mX);
 								
 							} else {
 								
-								console.log("No 'Nearest Date Value' found...");
-							}
-						
-							if (triggerEvent) {
+								console.log("No 'Nearest Date Value' found Nearest Date Value:  " 
+										+ (nearestDateValue ? nearestDateValue : "null???") 
+										+ ", Nearest Date Index: " 
+										+ ((nearestDateIndex || (nearestDateIndex == 0)) 
+												? nearestDateIndex 
+														: "null???" ));
 								
-								chartClickedEventManagement.fireHandlers(component, mX, graphIdsWithDataAtNearestDate);
+							}						
+							if (triggerEvent
+									&& ((nearestDateIndex
+											|| (nearestDateIndex == 0)))) {
+								
+								instanceData[owner].chartClickedEventManagement.fireHandlers(instanceData[owner], mX, nearestDateIndex);
 							}
 
 						} else {
@@ -271,105 +468,140 @@ function loadChartManager() {
 				
 				var chartMouseMoveHandler = function chartMouseMoveHandler() {
 					
-					console.log("ChartManager::chartMouseMoveHandler called...");
+//					console.log("ChartManager::chartMouseMoveHandler called...");
 					
 					positionPlayHead(this, false);
 					
 					return;
 				};
 				
-			function selectChart(d) {
+			function selectChart(owner, d) {
 				
 				var chart = null;
-				var width = layoutConfiguration.containerProperties.width;
+				var width = instanceData[owner].layoutConfiguration.containerProperties.width;
 				
 				if ("analog" === d.type) {
 				
 					chart = new GoChartControls.AnalogChart(
-													GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
-															(d.id + "_" + graphs.length)), prefix,
-															layoutConfiguration); 
+													GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, 
+															(d.id + "_" + instanceData[owner].graphs.length)), instanceData[owner].prefix,
+															instanceData[owner].layoutConfiguration); 
 					
 					chart.id(d.id)
-							.height(layoutConfiguration.analog.chartHeight)
-							.gap(layoutConfiguration.analog.gap)
-							.color(color);
+							.height(instanceData[owner].layoutConfiguration.analog.chartHeight)
+							.gap(instanceData[owner].layoutConfiguration.analog.gap)
+							.color(instanceData[owner].color);
 					
-					width = layoutConfiguration.analog.width();
+					width = instanceData[owner].layoutConfiguration.analog.width();
 					
 				} else if ("digital" === d.type) {
 					
 
 					chart = new GoChartControls.DigitalChart(
-													GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
-															(d.id + "_"  + graphs.length)), prefix,
-															layoutConfiguration);
+													GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, 
+															(d.id + "_"  + instanceData[owner].graphs.length)), 
+																instanceData[owner].prefix,
+																	instanceData[owner].layoutConfiguration);
 					
-					var h = graphHeight(d, layoutConfiguration.digital.chartHeight 
-									+ layoutConfiguration.containerProperties.padding);
+					var h = graphHeight(owner, d, instanceData[owner].layoutConfiguration.digital.chartHeight 
+									+ instanceData[owner].layoutConfiguration.containerProperties.padding);
 					
 					chart.id(d.id)
 							.height(h)
-							.color(color)
-							.y(function (t) { 
-									return t.State ? 1 : 0; 
+							.color(instanceData[owner].color)
+							.y(function (dataObject) { 
+								var results = d.yVal.map(function (c) {
+									
+											var results = dataObject[c] ? 1 : 0;
+											return results; 
+										});
+									
+									return results;
 								});
 					
-					width = layoutConfiguration.digit.width();
+					width = instanceData[owner].layoutConfiguration.digital.width();
 
 				} else if ("horizon" === d.type) {
 					
-					var mean = d.data.map(function (t) { return t.Value; } )
-										.reduce(function (p, v) { return p + v; }, 0) / d.data.length;
+					var mapped = d.data.map(function (dataObject) {
+						
+													var values = d.yVal.map(function (property) {
+																		
+																		var results = dataObject[property];
+																		return results;
+																	});
+													var value = values.reduce(function (p, v) {
+														var results = p + v;
+														return results;
+													});
+													
+													return value;
+												});
+					var sum = mapped.reduce(function (p, v) {
+						
+																var results = p + v;
+																return results;
+															});
+					var mean = sum / d.data.length;
 					
 					chart = new GoChartControls.HorizonChart(
-													GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
-															(d.id + "_"  + graphs.length)), prefix,
-															layoutConfiguration);
+													GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, 
+															(d.id + "_"  + instanceData[owner].graphs.length)), instanceData[owner].prefix,
+															instanceData[owner].layoutConfiguration);
 					
 					chart.id(d.id)
-							.height(layoutConfiguration.horizon.chartHeight)
-							.gap(layoutConfiguration.horizon.gap)
-							.y(function (t) { 
-									return t.Value - mean; 
-								})
-							.bands(layoutConfiguration.horizon.bands)
+							.height(instanceData[owner].layoutConfiguration.horizon.chartHeight)
+							.gap(instanceData[owner].layoutConfiguration.horizon.gap)
+							.y(function (dataObject) {
+														var values = d.yVal.map(function (property) {
+															
+															var results = dataObject[property];
+															return results;
+														});
+														var value = values.reduce(function (p, v) {
+															var results = p + v;
+															return results;
+														});
+														
+														return value - mean;
+												})
+							.bands(instanceData[owner].layoutConfiguration.horizon.bands)
 							.mode("offset");
 					
-					width = layoutConfiguration.horizon.width();
+					width = instanceData[owner].layoutConfiguration.horizon.width();
 					
 				} else if ("scatter" === d.type) {
 					
 					chart = new GoChartControls.ScatterChart(
-												GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
-														(d.id + "_"  + graphs.length)), prefix,
-														layoutConfiguration);
-					
+												GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, 
+														(d.id + "_"  + instanceData[owner].graphs.length)), instanceData[owner].prefix,
+														instanceData[owner].layoutConfiguration);
+
 					chart.id(d.id)
-							.height(layoutConfiguration.scatter.chartHeight)
-							.gap(layoutConfiguration.scatter.gap)
-							.color(color);
+							.height(instanceData[owner].layoutConfiguration.scatter.chartHeight)
+							.gap(instanceData[owner].layoutConfiguration.scatter.gap)
+							.color(instanceData[owner].color);
 					
-					width = layoutConfiguration.scatter.width();
+					width = instanceData[owner].layoutConfiguration.scatter.width();
 				}
 				
 				if (chart) {
 					
 					
-					chart.timeScale(xScale).x(function (t) { 
-							return (new Date(t.DateTime)).getTime(); 
+					chart.timeScale(instanceData[owner].xScale).x(function (t) { 
+							return t.date; 
 						});
 				}
 				
 				return chart.initialize;
 			}
 			
-			function graphHeight(d, height) {
+			function graphHeight(owner, d, height) {
 				
 				var results = height;
 				
 				if ("analog" === d.type) {
-					results = layoutConfiguration.analog.chartHeight;
+					results = instanceData[owner].layoutConfiguration.analog.chartHeight;
 				} else if ("digital" === d.type) {
 					var unique = {};
 					var distinct = new Array();
@@ -384,117 +616,140 @@ function loadChartManager() {
 					
 					var cnt = distinct.length;
 					
-					results = (layoutConfiguration.digital.chartHeight 
-									+ layoutConfiguration.containerProperties.padding) 
+					results = (instanceData[owner].layoutConfiguration.digital.chartHeight 
+									+ instanceData[owner].layoutConfiguration.containerProperties.padding) 
 										* cnt;
 				} else if ("horizon" === d.type) {
 					
-					resutls = layoutConfiguration.horizon.chartHeight;
+					resutls = instanceData[owner].layoutConfiguration.horizon.chartHeight;
+				} else if ("scatter" === d.type) {
+					resutls = instanceData[owner].layoutConfiguration.scatter.chartHeight;
 				}
 				
 				return results;
 			}
 
 	
-			function buildUI(containerId) {
+			function buildUI(instanceProperties, containerId) {
 					
 					console.log("ChartManager::buildUI called...");
 					
-					elementWidth = layoutConfiguration.containerProperties.width 
+					instanceProperties.elementWidth = layoutConfiguration.containerProperties.width 
 											+ layoutConfiguration.margins.verticalMargins
 											+ layoutConfiguration.containerProperties.padding;
-					elementHeight = layoutConfiguration.containerProperties.height
+					instanceProperties.elementHeight = layoutConfiguration.containerProperties.height
 											+ layoutConfiguration.margins.horizontalMargins
 											+ layoutConfiguration.containerProperties.padding;
 					
 					var controlContainer = d3.select(containerId).append("div")
 														.attr("id", GoUtilities
-																	.GenerateComponentSpecificIdentifiers(prefix, 
+																	.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, 
 																			"timeserieschart_container"))
+														.attr("class", "GoControlContainer")
+														.datum(instanceProperties.prefix)
 														.style("position", "absolute")
-														.style("border", layoutConfiguration.containerProperties.borders)
-														.style("background-color", layoutConfiguration.containerProperties.backgroundColor);
+														.style("border", instanceProperties.layoutConfiguration.containerProperties.borders)
+														.style("background-color", instanceProperties.layoutConfiguration.containerProperties.backgroundColor);
 					
-					svg = controlContainer.append("svg")
-											.attr("height", elementHeight)
-											.attr("width", elementWidth);
-
+					instanceProperties.svg = controlContainer.append("svg")
+											.attr("height", instanceProperties.elementHeight)
+											.attr("width", instanceProperties.elementWidth);
 					
-					svg.append("defs").append("clipPath")
-							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "clip"))
-						.append("rect")
-							.attr("width", layoutConfiguration.graphRegion.width) 
-							.attr("height", layoutConfiguration.graphRegion.height);
 					
-					chartCanvas = svg.append("g")
-							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "timeserieschart_ui"))
-							.attr("tansform", "translate(" + layoutConfiguration.margins.left 
+					instanceProperties.svg.append("defs").append("clipPath")
+										.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "clip"))
+									.append("rect")
+										.attr("width", instanceProperties.layoutConfiguration.graphRegion.width) 
+										.attr("height", instanceProperties.layoutConfiguration.graphRegion.height);
+								
+					instanceProperties.chartCanvas = instanceProperties.svg.append("g")
+							.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "timeserieschart_ui"))
+							.attr("tansform", "translate(" + instanceProperties.layoutConfiguration.margins.left 
 														+ ", " 
-														+ layoutConfiguration.margins.top 
+														+ instanceProperties.layoutConfiguration.margins.top 
 														+ ")");
 					
-					xScale = d3.time.scale().range(new Array(0, elementWidth));
+					instanceProperties.xScale = d3.time.scale()
+													.range(new Array(0,
+															(instanceProperties.layoutConfiguration.containerProperties.left 
+																	+ instanceProperties.layoutConfiguration.graphRegion.width))); 
 					
-					hoverLine = chartCanvas.append("svg:line")
+					instanceProperties.hoverLine = instanceProperties.chartCanvas.append("svg:line")
 											.attr("class", "hover-line")
-											.attr("x1", layoutConfiguration.graphRegion.hoverLine.x1)
-											.attr("x2", layoutConfiguration.graphRegion.hoverLine.x2)
-											.attr("y1", layoutConfiguration.graphRegion.hoverLine.y1)
-											.attr("y2", layoutConfiguration.graphRegion.hoverLine.y2)
-											.attr("stroke-width", layoutConfiguration.graphRegion.hoverLine.strokeWidth)
-											.attr("stroke", layoutConfiguration.graphRegion.hoverLine.strokeColor)
-											.attr("opacity", layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
+											.attr("x1", instanceProperties.layoutConfiguration.graphRegion.hoverLine.x1)
+											.attr("x2", instanceProperties.layoutConfiguration.graphRegion.hoverLine.x2)
+											.attr("y1", instanceProperties.layoutConfiguration.graphRegion.hoverLine.y1)
+											.attr("y2", instanceProperties.layoutConfiguration.graphRegion.hoverLine.y2)
+											.attr("stroke-width", instanceProperties.layoutConfiguration.graphRegion.hoverLine.strokeWidth)
+											.attr("stroke", instanceProperties.layoutConfiguration.graphRegion.hoverLine.strokeColor)
+											.attr("opacity", instanceProperties.layoutConfiguration.graphRegion.hoverLine.hiddenOpacity);
 					
-					chartCanvas.append("g")
-									.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "xAxis"))
+					instanceProperties.chartCanvas.append("g")
+									.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "xAxis"))
 									.attr("transform", "translate(" 
-															+ layoutConfiguration.graphRegion.xAxisXTranslate()
+															+ instanceProperties.layoutConfiguration.graphRegion.xAxisXTranslate()
 															+ ", "
-															+ (layoutConfiguration.margins.top * 1.5) 
+															+ (instanceProperties.layoutConfiguration.margins.top * 1.5) 
 															+ ")")
 									.attr("class", "brush");
 					
-					chartCanvas.select(GoUtilities.GenerateIdentifierSelector(
-											GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "xAxis")))
+					instanceProperties.chartCanvas.select(GoUtilities.GenerateIdentifierSelector(
+											GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "xAxis")))
 							.append("g")
-								.attr("class", "x axis");
+								.attr("class", GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "xAxis"));
 					
-					timeLegend = chartCanvas.append("text")
-											.attr("class", "legend-time")
-											.attr("x",  (layoutConfiguration.graphRegion.width 
-															+ layoutConfiguration.margins.verticalMargins))
-											.attr("y", layoutConfiguration.graphRegion.legendOffset)
-											.attr("text-anchor", layoutConfiguration.graphRegion.textAnchor)
+					instanceProperties.timeLegend = instanceProperties.chartCanvas.append("text")
+											.attr("class", "legend_time")
+											.attr("x",  (instanceProperties.layoutConfiguration.graphRegion.width 
+															+ instanceProperties.layoutConfiguration.margins.verticalMargins))
+											.attr("y", instanceProperties.layoutConfiguration.graphRegion.legendOffset)
+											.attr("text-anchor", instanceProperties.layoutConfiguration.graphRegion.textAnchor)
 											.text("time:");
 
-					svg.on("mouseover", chartMouseHoverHandler)
+					instanceProperties.svg.on("mouseover", chartMouseHoverHandler)
 							.on("mouseout", chartMouseOutHandler)
 							.on("mousemove", chartMouseMoveHandler)
 							.on("click", chartClickHandler);
 
+					var list = GoControls.CheckListwithComboBox;
+					var listPrefix = GoUtilities.GenerateComponentSpecificIdentifiers(
+													instanceProperties.prefix, "checklistselection");
+					var controls = new list(listPrefix, 
+												GoUtilities.GenerateIdentifierSelector(
+														GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, 
+																"timeserieschart_container")),
+																instanceProperties.layoutConfiguration.checkListProperties);
+					
+					controls.AddChartTypeSelectionChangedEventHandler(listPrefix, chartTypeChangedHandler);
+					controls.AddDataSetSelectionChangedEventHandler(listPrefix, dataSetChangedHandler);
+					
+					instanceProperties.checkListProperties = controls.InstanceProperties(listPrefix);
+					
+					instanceProperties.checkListProperties["owner"] = instanceProperties.prefix;
+
 					return;
 				};
 				
-				function adjustChartHeight() {
+				function adjustChartHeight(owner) {
 					
 					console.log ("ChartManager::adjustChartHeight called...");
-					
+				
 					var height = 0;
 					
-					graphs.forEach(function (element) {
+					instanceData[owner].graphs.forEach(function (element) {
 						
-						height += graphHeight(element, layoutConfiguration.graphRegion.defaultChartHeight);
+						height += graphHeight(owner, element, instanceData[owner].layoutConfiguration.graphRegion.defaultChartHeight);
 					});
 					
-					var containerHeight = height + layoutConfiguration.margins.horizontalMargins 
-												+ layoutConfiguration.containerProperties.height;
+					var containerHeight = height + instanceData[owner].layoutConfiguration.margins.horizontalMargins 
+												+ instanceData[owner].layoutConfiguration.containerProperties.height;
 					
-					svg.attr("height", containerHeight);
+					instanceData[owner].svg.attr("height", containerHeight);
 					
 					d3.select("#clip").select("rect")
 							.attr("height", height);
 					
-					chartCanvas.select(".hover-line")
+					instanceData[owner].chartCanvas.select(".hover-line")
 								.attr("y2", containerHeight); 
 					
 					return;
@@ -504,11 +759,13 @@ function loadChartManager() {
 					
 					console.log("ChartManager::zoomAsynchronously called...");
 					
+					var owner = GoUtilities.FindInstanceData(this);
+					
 					setTimeout(function () {
 						
-						graphs.forEach(function (element) {
+						instanceData[owner].graphs.forEach(function (element) {
 							
-								element.map = getLookupMap(element, xScale);
+								element.map = getLookupMap(owner, element, instanceData[owner].xScale);
 							});
 						
 						callback();
@@ -522,21 +779,27 @@ function loadChartManager() {
 				var dateComparer = function (a, b) {
 					
 					var aValue = (new Date(a)).getTime();
-					var bValue = (new Date(b)).getTime();
+					var bValue = b.getTime();
+					var results = bValue - aValue;
 					
-					return (aValue  > bValue);
+					return results == 0;
 				};
 				
-				function getLookupMap(graph, scaling) {
+				function getLookupMap(owner, graph, scaling) {
 					
 					console.log("ChartManager::getLookupMap called...");
 				
 					var cursorIndex = 0;
 					var map = new Array();
-					var startIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, 
-													"DateTime", scaling.domain()[0], dateComparer);  // Determine last index where graph's data's order property is less than scaling.domain[0]
-					var endIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, 
-													"DateTime", scaling.domain()[1], dateComparer); // Determine last index where graph's data's order property is less than scaling.domain[1]
+					var scale0 = scaling.domain()[0];
+					var scale1 = scaling.domain()[1];
+					
+					console.log("scale0: " + scale0 + ", scale1: " + scale1);
+					
+					var startIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, "date", 
+												scale0, dateComparer);  
+					var endIndex = GoUtilities.FindSortedInsertionPointWithKey(graph.data, "date", 
+												scale1, dateComparer); 
 
 					var data = null;
 					if (endIndex) {
@@ -552,34 +815,34 @@ function loadChartManager() {
 					
 					var dates = data.map(function(element) {
 									
-									return { DateTime: (new Date(element.DateTime)).getTime()}; 
+									return { date: element.date }; 
 								});
 					
-					d3.range(layoutConfiguration.graphRegion.width).forEach(function(px) {
+					d3.range((instanceData[owner].layoutConfiguration.containerProperties.left 
+									+ instanceData[owner].layoutConfiguration.graphRegion.width)).forEach(function(px) {
 						
 						var dt = scaling.invert(px);
 						var foundIndex = (GoUtilities.FindSortedInsertionPointWithKey(
-												dates.slice(cursorIndex), "DateTime", 
+												dates.slice(cursorIndex), "date", 
 												dt, dateComparer) || 0);
 						var dataIndex = cursorIndex + foundIndex;
 						
 						if (dataIndex < data.length) {
 							
 							if (dataIndex > 0) {
-								var left = (new Date(data[dataIndex - 1].DateTime)).getTime();
-								var right = (new Date(data[dataIndex].DateTime)).getTime();
+								var left = data[dataIndex - 1].date;
+								var right = data[dataIndex].date;
 								
 								if ((dt-left) < (right-dt)) {
 									
 									--dataIndex;
 								}
-								
-								map.push({date: data[dataIndex].DateTime, idx: dataIndex});
 							}
 							
-							cursorIndex = dataIndex;
+							map.push({x: data[dataIndex].date, idx: dataIndex});
 						}
 						
+						cursorIndex = dataIndex;
 						return;
 					});
 					
@@ -588,151 +851,157 @@ function loadChartManager() {
 				};
 				
 				
-				var addGraph = function addGraph(graph) {
+				var addGraph = function addGraph(owner, graph) {
 					
 					console.log("ChartManager::addGraph called...");
 					
 					var dates = graph.data.map(function mapper(element, index, arr) {
-						var results = element.DateTime ? element.DateTime : null;
+						var results = element.date ? element.date : null;
 						
 						return results;
 					});
 					
-					var min = (new Date(dates[0])).getTime();
-					var max = (new Date(dates[dates.length - 1])).getTime();
+					var min = dates[0];
+					var max = dates[dates.length - 1];
 					
 					var stretched = false;
 					
-					if ((min < xDomain[0]) 
-							|| (xDomain[0] == Number.POSITIVE_INFINITY)){
+					if ((min < instanceData[owner].xDomain[0]) 
+							|| (instanceData[owner].xDomain[0] == Number.POSITIVE_INFINITY)){
 						
-						xDomain[0] =  min;
-						
-						stretched = true;
-					}
-					if ((max > xDomain[1])
-							|| (xDomain[1] == Number.NEGATIVE_INFINITY)) {
-					
-						xDomain[1] = max;
+						instanceData[owner].xDomain[0] =  (new Date(min)).getTime();
 						
 						stretched = true;
 					}
+					if ((max > instanceData[owner].xDomain[1])
+							|| (instanceData[owner].xDomain[1] == Number.NEGATIVE_INFINITY)) {
 					
-					xScale.domain(xDomain);
+						instanceData[owner].xDomain[1] = (new Date(max)).getTime();
+						
+						stretched = true;
+					}
 					
-					graph.order = graphs.length;
+					console.log ("xDomain[0]: " + instanceData[owner].xDomain[0] + ", xDomain[1]: " + instanceData[owner].xDomain[1]);
+					instanceData[owner].xScale.domain(instanceData[owner].xDomain);
 					
-					graphs.push(graph);
+					graph.order = instanceData[owner].graphs.length;
+					
+					instanceData[owner].graphs.push(graph);
 					
 					if (stretched) {
 						
-						graphs.forEach(function (g) {
+						instanceData[owner].graphs.forEach(function (g) {
 							
-							g.map = getLookupMap(g, xScale);
+							g.map = getLookupMap(owner, g, instanceData[owner].xScale);
 						});
 					} else {
 						
-						graph.map = getLookupMap(graph, xScale);
+						graph.map = getLookupMap(owner, graph, instanceData[owner].xScale);
 					}
 					
 
-					var zoomScale = d3.time.scale().range([0, elementWidth]).domain(xScale.domain());
-					brush = d3.svg.brush()
+					var zoomScale = d3.time.scale()
+										.range([0, instanceData[owner].elementWidth])
+										.domain(instanceData[owner].xScale.domain());
+					instanceData[owner].brush = d3.svg.brush()
 									.x(zoomScale)
 									.on('brushend', function () {
 										
-										xScale.domain(brush.empty() ? xDomain : brush.extent());
+										instanceData[owner].xScale.domain(instanceData[owner].brush.empty() 
+																			? xDomain 
+																				: instanceData[owner].brush.extent());
 										
 										zoomAsynchronously(function () {
 											
-											render();
+											render(owner);
 											return;
 										});
 									});
 					
 					d3.select(GoUtilities.GenerateIdentifierSelector(
-									GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "xAxis")))
-										.call(brush)
+									GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, "xAxis")))
+										.call(instanceData[owner].brush)
 										.selectAll("rect")
 										.attr("y", -10)
 										.attr("height", 20);
 					
-					adjustChartHeight();
+					adjustChartHeight(owner);
 					
 					if (graph.render) {
-						render();
+						render(owner);
 					}
 					
 					return;
 				};
 				
-				var removeGraph = function removeGraph(graphId) {
+				var removeGraph = function removeGraph(owner, graphId) {
 					
 					console.log("ChartManager::removeGraph called...");
 					
-					graphs = graphs.filter(function (element) {
+					instanceData[owner].graphs = instanceData[owner].graphs.filter(function (element) {
 										
 										return element.id !== graphId;
 									})
 								.sort(function (a, b) {
 										
 										return a.order - b.order;
-									})
-								.forEach(function (element, i) {
+									});
+					
+					instanceData[owner].graphs.forEach(function (element, i) {
 									
 										element.order = i;
 										
 										return;
 									});
 					
-					adjustChartHeight();
+					adjustChartHeight(owner);
 					
-					render();
+					render(owner);
 					
 					return;
 				};
 				
-				var reorderGraph = function reoderGraph(graphId, direction) {
+				var reorderGraph = function reoderGraph(owner, graphId, direction) {
 					
 					console.log ("ChartManager::reorderGraph called....");
 					
-					var index = GoUtilites.FindIndexByKeyValue(graphs, "id", graphId);
+					var index = GoUtilites.FindIndexByKeyValue(instanceData[owner].graphs, "id", graphId);
 					
 					if (null != index) {
 						
 						if ("up" === direction) {
 							
-							var reorderedPosition = (graphs[index].order - 1);
+							var reorderedPosition = (instanceData[owner].graphs[index].order - 1);
 							
 							if (0 <= reorderedPosition) {
 								
-								var prv = GoUtilities.FindIndexByKeyValue(graphs, "order", reorderedPosition, dateComparer);
+								var prv = GoUtilities.FindIndexByKeyValue(instanceData[owner].graphs, "order", reorderedPosition, dateComparer);
 								
 								// This conditional may be optional.  It depends on if the order value is 
 								// correctly maintained with each add/remove call...
 								if (null != prv) {
 									
-									graphs[prv].order++;
+									instanceData[owner].graphs[prv].order++;
 								}
 								
-								graphs[index].order = reorderedPosition;
+								instanceData[owner].graphs[index].order = reorderedPosition;
 							}
 							
 						} else if ("down" === direction ) {
 							
-							var reorderedPosition = (graphs[index].order + 1);
+							var reorderedPosition = (instanceData[owner].graphs[index].order + 1);
 							
 							// See comment in the 'up' direction handler conditional.
-							if (reorderedPosition < graphs.length) {
+							if (reorderedPosition < instanceData[owner].graphs.length) {
 							
-								var nt = GoUtilities.FindIndexByKeyValue(graphs, "order", reorderedPosition, dateComparer);
+								var nt = GoUtilities.FindIndexByKeyValue(instanceData[owner].graphs, "order", reorderedPosition, dateComparer);
 								
 								if (null != nt) {
 									
-									graphs[nt].order--;
+									instanceData[owner].graphs[nt].order--;
 								}
 								
-								graphs[index].order = reorderedPosition;
+								instanceData[owner].graphs[index].order = reorderedPosition;
 							}
 							
 						} else {
@@ -752,18 +1021,20 @@ function loadChartManager() {
 					return;
 				};
 				
-				var render = function render(component) {
+				var render = function render(owner) {
 					
-					console.log("ChartManager::render called...");
+					console.log("ChartManager::render called..." + instanceData[owner]);
 					
-					var graphsComponents = chartCanvas.selectAll(".graph")
-													.data(graphs, function (d) {
+					var graphsComponents = instanceData[owner].chartCanvas.selectAll(".graph")
+													.data(instanceData[owner].graphs, function (d) {
 														
 															return d.id;
 														});
 					
-					var xAxis = d3.svg.axis().scale(xScale).orient("top").ticks(5);
-					d3.select(".x.axis").call(xAxis);
+					var xAxis = d3.svg.axis().scale(instanceData[owner].xScale).orient("top").ticks(5);
+					d3.select(GoUtilities.GenerateClassSelector(
+									GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, 
+											"xAxis"))).call(xAxis);
 					
 					graphsComponents.exit().remove();
 					
@@ -771,45 +1042,46 @@ function loadChartManager() {
 						
 						var g = d3.select(this);
 												
-						g.transition().duration(layoutConfiguration.graphRegion.duration)
+						g.transition().duration(instanceData[owner].layoutConfiguration.graphRegion.duration)
 										.attr("transform", function (d) {
 												
-												var tx = layoutConfiguration.margins.left 
-																- layoutConfiguration.containerProperties.padding;
+												var tx = instanceData[owner].layoutConfiguration.containerProperties.left 
+																+ instanceData[owner].layoutConfiguration.margins.left 
+																- instanceData[owner].layoutConfiguration.containerProperties.padding;
 												
 												if ("analog" === d.type) {
 													
-													tx = layoutConfiguration.analog.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.analog.graphTransform();
 													
 												} else if ("digital" === d.type) {
 													
-													tx = layoutConfiguration.digital.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.digital.graphTransform();
 													
 												} else if ("horizon" === d.type) {
 													
-													tx = layoutConfiguration.horizon.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.horizon.graphTransform();
 												} else if ("scatter" === d.type) {
 													
-													tx = layoutConfiguration.scatter.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.scatter.graphTransform();
 												}
 												
-												var ty = layoutConfiguration.margins.horizontalMargins 
-															+ layoutConfiguration.containerProperties.top;
+												var ty = instanceData[owner].layoutConfiguration.margins.horizontalMargins 
+															+ instanceData[owner].layoutConfiguration.containerProperties.top;
 												
-												graphs.filter(function (t) {
+												instanceData[owner].graphs.filter(function (t) {
 													
 															return t.order < d.order;
 															
 														}).forEach(function (w) {
 																
-																ty += graphHeight(w, 
-																		layoutConfiguration.graphRegion.defaultChartHeight);
+																ty += graphHeight(owner, w, 
+																		instanceData[owner].layoutConfiguration.graphRegion.defaultChartHeight);
 															});
 												
 												return "translate(" + tx + ", " + ty + ")";
 											});
 		
-						g.call(selectChart(d));
+						g.call(selectChart(owner, d));
 					});
 					
 					var newGraphs = graphsComponents.enter()
@@ -817,36 +1089,36 @@ function loadChartManager() {
 										.attr("class", "graph")
 										.attr("transform", function (d) {
 												
-												var tx = layoutConfiguration.margins.left 
-																- layoutConfiguration.containerProperties.padding;
+												var tx = instanceData[owner].layoutConfiguration.margins.left 
+																- instanceData[owner].layoutConfiguration.containerProperties.padding;
 												
 												if ("analog" === d.type) {
 													
-													tx = layoutConfiguration.analog.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.analog.graphTransform();
 													
 												} else if ("digital" === d.type) {
 													
-													tx = layoutConfiguration.digital.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.digital.graphTransform();
 													
 												} else if ("horizon" === d.type) {
 													
-													tx = layoutConfiguration.horizon.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.horizon.graphTransform();
 												} else if ("scatter" === d.type) {
 													
-													tx = layoutConfiguration.scatter.graphTransform();
+													tx = instanceData[owner].layoutConfiguration.scatter.graphTransform();
 												}
 												
 
-												var ty = layoutConfiguration.margins.horizontalMargins 
-															+ layoutConfiguration.containerProperties.top;
+												var ty = instanceData[owner].layoutConfiguration.margins.horizontalMargins 
+															+ instanceData[owner].layoutConfiguration.containerProperties.top;
 												
-												graphs.filter(function (t) {
+												instanceData[owner].graphs.filter(function (t) {
 													
 															return t.order < d.order;
 														}).forEach(function (w) {
 																
-																ty += graphHeight(w, 
-																		layoutConfiguration.graphRegion.defaultChartHeight);
+																ty += graphHeight(owner, w, 
+																		instanceData[owner].layoutConfiguration.graphRegion.defaultChartHeight);
 															});
 												
 												return "translate(" + tx + ", " + ty + ")";
@@ -856,7 +1128,7 @@ function loadChartManager() {
 
 							d3.select(this).call(function () { 
 								
-								selectChart(d)(this); 
+								selectChart(owner, d)(this); 
 	
 								return;
 							}); 
@@ -894,11 +1166,33 @@ function loadChartManager() {
 							throw new Error("Layout Configuration data argument not defined.");
 						}
 						
+						instanceData[instancePrefix] = { 
+															prefix: instancePrefix,
+															layoutConfiguration: layout,
+															svg: null,
+															chartCanvas: null,
+															xScale: null,
+															xDomain: new Array(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY),
+															hoverLine: null,
+															graphs: new Array(),
+															activePlayHead: false,
+															elementWidth: null,
+															elementHeight: null,
+															logChartHeight: 100,
+															diChartHeight: 20,
+															color: d3.scale.category10(),
+															timeLegend: null,
+															brush: null,
+															dataSet: null,
+															chartClickedEventManagement: new GoAbstractControls.EventHandlerManagement()
+														};
+						
 						prefix = instancePrefix;
 						
 						layoutConfiguration = layout;
 						
-						buildUI(containerId);
+						buildUI(instanceData[prefix], containerId);
+
 					};
 					
 				var methods = {
@@ -907,7 +1201,10 @@ function loadChartManager() {
 						reorderGraph: reorderGraph,
 						render: render,
 						AddChartClickedEventHandler: addChartClickedEventHandler,
-						RemoveChartClickeEventHandler: removeChartClickeEventHandler
+						RemoveChartClickeEventHandler: removeChartClickeEventHandler,
+						AddDataSet: addDataSet,
+						AddRangeId: addRangeId,
+						RemoveChart: removeChart
 				};
 				var statics = {};
 				

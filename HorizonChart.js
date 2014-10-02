@@ -75,7 +75,6 @@ function loadHorizonChart() {
 				var width = 960;
 				var height = 40;
 				var gap = 10;
-				var timeOut = 0;				
 				var color = null;
 				var id = null;
 				var duration = null;
@@ -96,7 +95,7 @@ function loadHorizonChart() {
 				
 				var durationProperty = function durationProperty(value) {
 					
-					var results = timeOut;
+					var results = duration;
 					
 					if (arguments.length) {
 						
@@ -255,7 +254,11 @@ function loadHorizonChart() {
 			
 			function d3_horizonX(d) {
 				
-				return d[0].getTime();
+				var value = (new Date(xValue(d))).getTime();
+				var results = xScale(value);
+				
+				return results;
+//				return d[0].getTime();
 			}
 			
 			function d3_horizonY(d) {
@@ -294,8 +297,8 @@ function loadHorizonChart() {
 						if ("horizon" === d.type) {
 						
 							var local = d3.select(this)
-												.attr("id", d.id);
-							var n = 2 * bandCount + 1;
+												.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id));
+//							var n = 2 * bandCount + 1;
 							var xMin = Number.POSITIVE_INFINITY;
 							var xMax = Number.NEGATIVE_INFINITY;
 							var yMax = Number.NEGATIVE_INFINITY;
@@ -339,7 +342,8 @@ function loadHorizonChart() {
 							
 							if (this.__chart__) {
 								
-								if (this.__chart__[d.id]) {
+								if (this.__chart__[d.id]
+										&& !d.updated) {
 									
 									var alias = this.__chart__[d.id];
 									
@@ -362,6 +366,8 @@ function loadHorizonChart() {
 								t0 = t1;
 								id = ++d3_horizonId;
 							}
+							
+							local.selectAll("*").remove();
 							
 							var defs = local.selectAll("defs").data(new Array(null));
 							
@@ -393,25 +399,32 @@ function loadHorizonChart() {
 											.data(pathData, Number);
 							
 							var d0 = d3_horizonArea.interpolate(interpolate)
-												.x(function (d) { 
-														return x0(d[0]); 
+												.x(function (d) {
+														var value = (new Date(d[0])).getTime();
+														var results = x0(value);
+														return results; 
 													})
 												.y0(height * bandCount)
 												.y1(function(d) { 
-														return height * bandCount - y0(d[1]); 
+														var value = d[1];
+														var scaledValue = y0(value);
+														var results = height * bandCount - scaledValue;
+														return results; 
 													})
 												(data);
 							
 							var d1 = d3_horizonArea.x(function(d) { 
-														return x1(d[0]); 
+														var value = (new Date(d[0])).getTime();
+														var results = x1(value);
+														return results; 
 													})
 												.y1(function(d){ 
-														return height * bandCount - y0(d[1]); 
+														var value = d[1];
+														var scaledValue = y0(value);
+														var results = height * bandCount - scaledValue;
+														return results; 
 													})
 												(data);
-							
-							console.log(d0);
-							console.log(d1);
 							
 							path.enter().append("path")
 									.style("fill", color)
@@ -435,6 +448,7 @@ function loadHorizonChart() {
 									.attr("y", 10);
 	
 							this.__chart__[d.id] = { x: x1, y: y1, t: t1, id: id };
+							d.updated = false;
 						}
 					});
 					

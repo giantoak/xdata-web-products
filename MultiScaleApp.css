@@ -1,0 +1,16 @@
+@CHARSET "UTF-8";
+
+.link {
+
+	stroke: #999;
+	stroke-opacity: 0.75;
+}
+
+.glyphicon-chevron-left:before {
+    content: "";
+}
+      
+.glyphicon-chevron-right:before {
+    content: "";
+}
+      

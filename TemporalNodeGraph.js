@@ -74,6 +74,7 @@ function loadTemporalNodeGraph() {
 			var betweennessColorMapper = null;
 			var additionalNodeDataURL = null;
 			var periodLabel = "";
+			var periodOffset = "";
 			var loadedData = null;
 			var userSelectedColors = null;
 			var linkDataDisplay = null;
@@ -204,31 +205,36 @@ function loadTemporalNodeGraph() {
 						"label": "",
 						"accessor": function (d) {
 							
-							return layoutConfiguration.graphProperties.baseNodeColor;
+							var color = layoutConfiguration.graphProperties.baseNodeColor;
+							
+							return color;
 					}}, 
 					{
 						"label": "Eigenvector Centrality",
 						"accessor": function (d) {
 							
 							console.log("Eigenvector Centrality - color selector");
+							var color = (d.eigcen ? eigCenColorMapper(d.eigcen) : layoutConfiguration.graphProperties.baseNodeColor);
 							
-							return eigCenColorMapper(d.eigcen);
+							return color;
 					}}, 
 					{	
 						"label": "Betweenness",
 						"accessor": function (d) {
 							
 							console.log("Betweenness - color selector");
+							var color = (d.betweenness ? betweennessColorMapper(d.betweenness) : layoutConfiguration.graphProperties.baseNodeColor);
 							
-							return betweennessColorMapper(d.betweenness);
+							return color;
 						}}, 
 					{
 						"label": "Degree",
 						"accessor": function (d) {
 							
 							console.log("Degree - color selector");
+							var color = (d.degree ? degreeColorMapper(d.degree) : layoutConfiguration.graphProperties.baseNodeColor);
 							
-							return degreeColorMapper(d.degree);
+							return color;
 						}});
 
 			var setPeriodLabel = function setPeriodLabel(value) {
@@ -237,13 +243,22 @@ function loadTemporalNodeGraph() {
 				
 				periodLabel = value;
 				
-				var title = d3.select(GoUtilities.GenerateIdentifierSelector(GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "temporalnodegraph_title")));
+				var title = d3.select(GoUtilities.GenerateIdentifierSelector(
+										GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "temporalnodegraph_title")));
 				
 				title.text(layoutConfiguration.titleProperties.labelPrefix + " " + periodLabel);
 				
 				return;
 			};
 			
+			var setRelativePeriodOffset = function setRelativePeriodOffset(value) {
+				
+				console.log("TemporalNodeGraph::setRelativePeriodOffset called with: '" + value + "'");
+				
+				periodOffset = value;
+				
+				return;
+			}; 
 			
 			var updateNodeData = function updateNodeData() {
 				
@@ -254,11 +269,81 @@ function loadTemporalNodeGraph() {
 							&& loadedData.nodes) {
 					
 					GoUtilities.FetchData(additionalNodeDataURL, 
-											auxiliaryDataMapper, 
-											null, 
-											function (d) {
+										function (error, data) {
+											
+											console.log("TemporalNodeGraph::NodeDataMapper called...");
+											
+											if (error) {
+												console.warn(error);
+											} else {
+
+												
+												// Initialize the nodes with a default moniker...
+												loadedData.nodes.forEach(function defaultMonikerMapper (element, i) {
+														
+													layoutConfiguration.additionalDataHandling.dataMappers.mappers.forEach(function (mapper) {
+															
+															element[mapper.targetName] = mapper.initializer(i);
+															
+															return;
+														});
+														
+														return;
+													});
+												
+												// Walk the downloaded data set and append its data as requested...
+												data.forEach(function (auxData, i) {
+													
+													// Figure out which node to augment.
+													var index = GoUtilities.FindIndexByKeyValue(loadedData.nodes, 
+																						layoutConfiguration.additionalDataHandling.dataMappers.key, 
+																						auxData[layoutConfiguration.additionalDataHandling.dataMappers.key],
+																						function (a, b) {
+																							return a == b;
+																						});
+													
+													// Actually found a Node Object to augment.
+													if (index || (index == 0)) {
+														
+														// Transfer the downloaded data properties to the network node
+														layoutConfiguration.additionalDataHandling.dataMappers.mappers.forEach(function (mapper) {
+																
+																var alias = loadedData.nodes[index];
+																
+//																console.log("TemporalNodeGraph::updateNodeData dataset merge handler - node[" 
+//																			+ mapper.targetName 
+//																			+ "], currently '" 
+//																			+ alias[mapper.targetName] 
+//																			+ "', will be reassigned from auxData[" 
+//																			+ mapper.sourceName + "], which is '" 
+//																			+ auxData[mapper.sourceName] + "'" );
+//																
+																alias[mapper.targetName] = auxData[mapper.sourceName];
+	
+																return;
+															});
+													}
+												});
+											}
+											
+											return;
+										},
+										null,
+										function (d) {
 							
-													return { id: d.V1, name: d.V2 }; 
+													// Support mapping of the objects from the download source into a different format.
+													var mappedResults = {};
+
+													// Walk through the list of mappers (the whole downloaded data structure does not need to be preserved...
+													layoutConfiguration.additionalDataHandling.downloadMapper.forEach(function (mapper) {
+															
+															// Move the source value into the corresponding (translated) target value.
+															mappedResults[mapper.targetName] = d[mapper.sourceName];
+															
+															return;
+														}); 
+													
+													return mappedResults;
 												});
 
 				}
@@ -420,17 +505,23 @@ function loadTemporalNodeGraph() {
 						.links(loadedData.links)
 						.start();
 				
+				var selector = GoUtilities.GenerateIdentifierSelector(
+									GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "temporalnodegraph_ui"));
+				
+				d3.select(selector).selectAll("*").remove();
+				
 				link = svg.selectAll(".link").data(loadedData.links, function (d) {
 									return d.source.id + ":" + d.target.id;
 								});
-				
-				link.attr("class", "link")
-						.attr("id", function (d) {
-							
-								return d.source.id + "_" + d.target.id;
-							})
-						.on("mouseover", linkMouseOver)
-						.on("mouseout", linkMouseOut);
+
+				// Won't occur as the contailer has been emptied prior 
+//				link.attr("class", "link")
+////						.attr("id", function (d) {
+////							
+////								return d.source.id + "_" + d.target.id;
+////							})
+//						.on("mouseover", linkMouseOver)
+//						.on("mouseout", linkMouseOut);
 				
 				// Ensure that the added line elements are placed before node elements
 				// so that the render under the nodes visually.  This is required to 
@@ -439,48 +530,43 @@ function loadTemporalNodeGraph() {
 									.attr("class", "link")
 									.attr("id", function (d) {
 											
-											return d.source.id + "_"  + d.target.id;
+											return d.source.id + "_"  + d.target.id + ":" + Date.now();
 										})
 									.on("mouseover", linkMouseOver)
 									.on("mouseout", linkMouseOut);
 				
-				link.exit().remove();
+				// Won't occur as the contailer has been emptied prior 
+//				link.exit().remove();
 	
-				var workingSet = svg.selectAll(".nodeContainer");
-				
-				workingSet = workingSet.data(loadedData.nodes, function (d) {
+				var workingSet = svg.selectAll(".nodeContainer").data(loadedData.nodes, function (d) {
 						
 										return d.id;
-									})						
-								.attr("id", function (d) {
-					
-									return d.id;
-								});
+									});						
 				
-				workingSet.selectAll("g")
-						.attr("class", function (d) {
-								
-								var results = "node";
-								
-								if (d.fixed) {
-									
-									results += " fixed";
-								}
-								
-								return results;										
-							})
-						.on("dblclick", handleDoubleClick)
-						.on("mouseover", nodeMouseOver)
-						.on("mouseout", nodeMouseOut)
-						.on("click", handleClick)
-						.call(drag);
-	
+				// Won't occur as the contailer has been emptied prior 
+//				workingSet.attr("class", function (d) {
+//								
+//								var results = "node";
+//								
+//								if (d.fixed) {
+//									
+//									results += " fixed";
+//								}
+//								
+//								return results;										
+//							})
+//						.on("dblclick", handleDoubleClick)
+//						.on("mouseover", nodeMouseOver)
+//						.on("mouseout", nodeMouseOut)
+//						.on("click", handleClick)
+//						.call(drag);
+//	
 				workingSet.enter()
 						.append("g")
 							.attr("class", "nodeContainer")
 							.attr("id", function (d) {
 						
-										return d.id;
+										return d.id  + ":" + Date.now();
 									})
 						.append("g")
 							.attr("transform", function (d) {
@@ -504,7 +590,8 @@ function loadTemporalNodeGraph() {
 							.on("click", handleClick)
 							.call(drag);
 
-				workingSet.exit().remove();
+				// Won't occur as the contailer has been emptied prior 
+//				workingSet.exit().remove();
 				
 				var layout = new Array("circle", "circle");
 				var layoutClasses = new Array("userSelection", "userStatistics");
@@ -697,6 +784,16 @@ function loadTemporalNodeGraph() {
 				return;
 			};
 			
+			function redraw() {
+				
+					svg.attr("transform", "translate(" 
+												+ d3.event.translate 
+												+ ") scale(" 
+												+ d3.event.scale 
+												+ ")");
+					
+					return;
+				}
 
 			function buildUI(containerId) {
 				
@@ -733,7 +830,7 @@ function loadTemporalNodeGraph() {
 								.style("position", "absolute")
 								.style("top", layoutConfiguration.titleProperties.top)
 								.style("left", layoutConfiguration.titleProperties.left)
-								.style("width", elementWidth)
+								.style("width", elementWidth + "px")
 								.style("text-align", layoutConfiguration.titleProperties.textAlignment)
 								.attr("id", 
 										GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
@@ -756,6 +853,7 @@ function loadTemporalNodeGraph() {
 								.attr("width", elementWidth)
 								.style("top", (layoutConfiguration.margins.top 
 													+ offsetHeight) + "px")
+								.call(d3.behavior.zoom().on("zoom", redraw))
 							.append("g")
 								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 																	"temporalnodegraph_ui"));
@@ -923,9 +1021,9 @@ function loadTemporalNodeGraph() {
 													+ layoutConfiguration.scrubberProperties.margin)) + "px")
 						.on("click", function(d) {
 								
-								console.log("Time Scrubber Back Button clicked: '" + periodLabel + "'");
+								console.log("Time Scrubber Back Button clicked: '" + periodOffset + "'");
 								
-								stepBackwardsEventManagement.fireHandlers(periodLabel);
+								stepBackwardsEventManagement.fireHandlers(periodOffset);
 								
 								return;
 							})
@@ -947,9 +1045,9 @@ function loadTemporalNodeGraph() {
 													+ layoutConfiguration.scrubberProperties.margin)) + "px")
 						.on("click", function(d) {
 								
-								console.log("Time Scrubber Forward Button clicked: '" + periodLabel + "'");
+								console.log("Time Scrubber Forward Button clicked: '" + periodOffset + "'");
 								
-								stepForwardsEventManagement.fireHandlers(periodLabel);
+								stepForwardsEventManagement.fireHandlers(periodOffset);
 								
 								return;
 							})
@@ -1037,6 +1135,18 @@ function loadTemporalNodeGraph() {
 							
 							return;
 						}
+					});
+			
+			Object.defineProperty(component.prototype,
+					"PeriodOffset", 
+					{
+
+						enumerable: true,
+						configurable: true,
+						get: function() {
+							return periodOffset;
+						},
+						set: setRelativePeriodOffset
 					});
 
 			Object.defineProperty(component.prototype,

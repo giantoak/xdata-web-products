@@ -79,12 +79,10 @@ function loadScatterChart() {
 
 				function X(d) {
 					
-					var intermediate = xValue(d);
+					var intermediate = (new Date(xValue(d))).getTime();
 					var results = xScale(intermediate);
 					
 					return results;
-					
-//					return xScale(xValue(d));
 				}
 				
 				var idProperty = function idProperty(value) {
@@ -191,7 +189,8 @@ function loadScatterChart() {
 					
 					var yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
 					
-					g.attr("id", d.id)
+					g.selectAll("*").remove();
+					g.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id))
 						.append("g")
 							.attr("class", "y axis")
 							.attr("transform", "translate(-1, 0)")
@@ -208,13 +207,14 @@ function loadScatterChart() {
 						if ("scatter" === d.type) {							
 							
 							var g = d3.select(this)
-										.attr("id", d.id);
+										.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id));
 							var chartConfig = this.__chart__;
 							var config = null;
 						
 							if (chartConfig) {
 								
-								if (chartConfig[d.id]) {
+								if (chartConfig[d.id]
+										&& !d.updated) {
 									
 									config = { yDomain: chartConfig[d.id].yDomain, y: chartConfig[d.id].y };
 									
@@ -234,19 +234,25 @@ function loadScatterChart() {
 							
 							d.yVal.forEach(function (c, i) {
 								
-								var circleGroup = null;
-								
 								if (chartConfig) {
 								
-									circleGroup = g.selectAll("circle").transition()
+									g.selectAll("circle").transition()
 														.duration(layoutConfiguration.graphRegion.duration)
-															.attr("cx", function (d) {
+															.attr("cx", function (dotData) {
 																
-																	return X(d);
+																	var results = X(dotData);
+																	return results;
 																})
-															.attr("cy", function (d) {
+															.attr("cy", function (dotData) {
 																
-																	return y(d.Value);
+																	var value = d.yVal.map(function (property) { 
+																						return dotData[property]; 
+																					}). reduce (function (p, v) {
+																						var results = p + v;
+																						return results;
+																					});
+																	var results = y(value);
+																	return results;
 																});
 								} else {
 									
@@ -255,17 +261,25 @@ function loadScatterChart() {
 										.attr("x", 10)
 										.attr("y", 10);
 									
-									circleGroup = g.selectAll("circle")
+									g.selectAll("circle")
 															.data(d.data)
 														.enter()
 															.append("circle")
-																.attr("cx", function (d) {
+																.attr("cx", function (dotData) {
+
+																							var results = X(dotData);
+																							return results;
+																						})
+																.attr("cy", function (dotData) {
 																	
-																		return X(d);
-																	})
-																.attr("cy", function (d) {
-																	
-																		return y(d.Value);
+																		var value = d.yVal.map(function (property) { 
+																							return dotData[property]; 
+																						}). reduce (function (p, v) {
+																							var results = p + v;
+																							return results;
+																						});
+																		var results = y(value);
+																		return results;
 																	})
 																.attr("class", "dots")
 																.attr("r", layoutConfiguration.scatter.radius)
@@ -274,6 +288,7 @@ function loadScatterChart() {
 							});
 							
 							this.__chart__[d.id] = config;
+							d.updated = false;
 						}		
 					});
 				};

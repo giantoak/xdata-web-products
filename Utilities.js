@@ -260,13 +260,34 @@ function loadUtilitiesModule() {
 				return;
 			};
 			
+			// Given a Giant Oak dynamically created component, find the container it is nested in
+			// return the datum value assigned to that container during it's creation (which by
+			// definition is the prefx assigned to that subtree.  That prefix is also used as the
+			// key into an associated array holding the calling component's instance properties.
+			//
+			// NOTE: Or at least that's the plan....
+			var findInstanceReference = function findInstanceReference(component) {
+
+				var container = $(component);
+				container = container.closest(".GoControlContainer");
+				var dataReference = container.attr("id");
+				var dataReferenceSelector = generateIdentifierSelector(dataReference); 
+				return d3.select(dataReferenceSelector).datum();
+			};
+			
 			var findIndexByKeyValue = function findIndexByKeyValue(obj, key, value, comparer){
+				
+				// comparer = (typeof comparer === "undefined") ? function (a, b) { return a == b; } : comparer;
+				// comparer = (typeof comparer !== "function") ? function (a, b) { return a == b; } : comparer;
+					
+					var results = null;
 	                for (var i = 0; i < obj.length; i++) {
 	                    if (comparer(obj[i][key], value)) {
-	                        return i;
+	                        results = i;
+	                        break;
 	                    }
 	                }
-	                return null;
+	                return results;
 	            };
 	            
 	        var findSortedInsertionPointWithKey = function findSortedInsertionPointWithKey(obj, key, value, comparer) {
@@ -286,19 +307,30 @@ function loadUtilitiesModule() {
 	        };
 	
 
+
 	        var generateComponentSpecificIdentifiers = function generateComponentSpecificIdentifiers(prefix, identifier) {
 	        	
-	        	return prefix + "_" + identifier;
+	        	return prefix + "_" + identifier.replace(/\s+/g, "_");
 	        };
 	        
 	        var generateClassSelector = function generateClassSelector (identifier) {
 	        	
-	        	return "." + identifier;
+	        	return "." + identifier.replace(/\s+/g, "_");
+	        };
+
+	        var generateIdentifierStartsWithSelector = function generateIdentifierStartsWith(identifier) {
+	        	
+	        	return "[id^=" + identifier.replace(/\s+/g, "_") + "]";
+	        };
+	        
+	        var generateIdentifierEndsWithSelector = function generateIdentifierEndsWith(identifier) {
+	        	
+	        	return "[id$=" + identifier.replace(/\s+/g, "_") + "]";
 	        };
 	        
 	        var generateIdentifierSelector = function generateIdentifierSelector(identifier) {
 	        	
-	        	return "#" + identifier;
+	        	return "#" + identifier.replace(/\s+/g, "_");
 	        };
 
 			
@@ -440,12 +472,14 @@ function loadUtilitiesModule() {
 						IsModuleLoaded: isModuleLoaded,
 						MapColors: mapColors,
 						FetchData: fetchData,
+						FindInstanceData: findInstanceReference,
 						FindIndexByKeyValue: findIndexByKeyValue,
 						FindSortedInsertionPointWithKey: findSortedInsertionPointWithKey,
 						GenerateComponentSpecificIdentifiers: generateComponentSpecificIdentifiers,
 						GenerateClassSelector: generateClassSelector,
-						GenerateIdentifierSelector: generateIdentifierSelector
-
+						GenerateIdentifierSelector: generateIdentifierSelector,
+						GenerateIdentifierStartsWithSelector: generateIdentifierStartsWithSelector,
+						GenerateIdentifierEndsWithSelector: generateIdentifierEndsWithSelector
 				};
 		}());
 		

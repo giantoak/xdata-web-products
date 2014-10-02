@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Checked List with Combo Box Sub options Proof of Concept</title>
+		
+		<script type="text/javascript" src="./Dependencies/jquery-1.11.1.source.js"></script>
+		<script type="text/javascript" src="./Dependencies/jquery-ui-1.11.0/jquery-ui.js"></script>
+		<script type="text/javascript" src="./Dependencies/d3.js"></script>
+
+	</head>
+	<body>
+		<div style="border: 1px solid black; background-color: AliceBlue; height: 2000px; padding: 5px;">
+			<svg width="1500" height="1500">
+				<g id="options">
+				<!-- 
+					<rect id="opt1" x="0" y="0" width="700" height="50" stroke="lightgrey" fill="white" stroke-width="3">
+					</rect>
+				 -->
+				</g>
+			</svg>
+		</div>
+		
+		<script type="text/javascript">
+		
+			$(document).ready(function pageSetup() {
+				
+				var onDropDown = function () {
+					
+					var datum = d3.select(this).datum();
+
+					console.log("onDropDown called..." + this.innerHTML);
+
+					d3.selectAll("#option_dropdown_" + datum).attr("visibility", "visible")
+															.attr("width", 800);
+					d3.selectAll(".additionOptions_" + datum).attr("visibility", "visible");
+										
+					return;
+				};
+				
+				var onRollUp = function () {
+					
+					console.log("onRollUp Called...");
+					
+					var datum = d3.select(this).datum();
+					
+					rollUpHandler(datum);
+					
+					return;
+				}
+				
+				var rollUpHandler = function (datum) {
+					
+					console.log("onRollUpHandler called..." + datum);
+					
+					d3.selectAll("#option_dropdown_" + datum).attr("visibility", "hidden")
+																.attr("width", "150");
+					d3.selectAll(".additionOptions_" + datum).attr("visibility", "hidden");
+									
+					return;
+				};
+				
+				var onOptionSelected = function () {
+
+					var datum = d3.select(this).datum();
+					
+					console.log("onOptionSelected called...");
+
+					
+					var instance = d3.select(this);
+					var selected = d3.select("#selected_option_" + datum);					
+					var instanceOption = instance.text();
+					var selectedOption = selected.text();
+					
+					console.log("User changed graph style for " + datum + " from: '" + selectedOption + "' to '" + instanceOption + "'");
+
+					instance.text(selectedOption);
+					selected.text(instanceOption);
+
+					// needs to call event handler manager to update rest of 
+					// graphs (Same Set Different Style)
+					
+					
+					rollUpHandler(datum);
+
+					return;
+				};
+				
+				var generateCheckedOptionControl = function (data, index) {
+					
+					var container = d3.select("#options").append("g")
+											.attr("id", "option_" + index)
+											.attr("transform", "translate(0, " + (50 * index) + ")");
+					var offset = 0;
+					
+					// Add Item Container group - So all addressing is relative to the group 
+					// which needs only to be transformed into position.
+					
+					// Add Item Container Background
+					container.append("rect").attr("x", "1")
+								.attr("y", "1")
+								.attr("width", "698")
+								.attr("height", "50")
+								.attr("stroke", "black")
+								.attr("stroke-width", "1")
+								.attr("fill", "none")
+								.attr("id", "option_outline_" + index);
+					
+					// Add 'Checkbox' element to list 
+					container.append("rect").attr("x", "5")
+								.attr("y", "5")
+								.attr("width", "40")
+								.attr("height", "40")
+								.attr("fill", "white")
+								.attr("stroke", "black")
+								.attr("stroke-width", "3")
+								.attr("id", "option_selector_" + index)
+								.attr("visibility", "visible")
+								.datum(index)
+								.on("click", function (d) {
+									
+									var instance = d3.select(this);
+									var color = "none";
+									if ("white" === instance.attr("fill")) {
+										
+										color = "cyan";
+									} else {
+										
+										color = "white";
+									}
+									
+									instance.attr("fill", color);
+									
+									// needs to call event handler manager to update rest of 
+									// graph (Add or Remove Chart)
+									
+									return;
+								});
+					
+					
+					// Add Item label
+					container.append("text").text(data)
+								.attr("x", "60")
+								.attr("y", "35")
+								.attr("visibility", "visible")
+								.style("stroke", "black")
+								.style("fill", "purple")
+								.style("font-family", "Times New Roman")
+								.style("font-size", "24pt");
+					
+					// Add Display Style Item container
+					container.append("rect").attr("x", "500")
+									.attr("y", "5")
+									.attr("width", "150")
+									.attr("height", "40")
+									.attr("fill", "none")
+									.attr("stroke", "black")
+									.attr("class", "option_item")
+									.attr("id", "option_item_" + index)
+									.attr("visibility", "visible")
+									.attr("stroke-width", "3")
+									.datum(index);
+	
+					// Add Drop Down Trigger 
+					container.append("rect").attr("x", "655")
+								.attr("y", "5")
+								.attr("width", "40")
+								.attr("height", "40")
+								.attr("fill", "lightgrey")
+								.attr("stroke", "darkgrey")
+								.attr("stroke-width", "3")
+								.attr("class", "option_styler")
+								.attr("id", "option_styler_" + index)
+								.attr("visibility", "visible")
+								.datum(index)	
+								.on("mouseover", onDropDown)
+								.on("click", onDropDown);
+					
+					// Add Display Style Drop Down Menu background
+					container.append("rect").attr("x", "500")
+									.attr("y", "5")
+									.attr("width", "150")
+									.attr("height", "45")
+									.attr("fill", "mintcream")
+									.attr("stroke", "black")
+									.attr("stroke-width", "3")
+									.attr("class", "option_dropdown")
+									.attr("id", "option_dropdown_" + index)
+									.attr("visibility", "hidden")
+									.datum(index)
+									.on("mouseout", onRollUp );
+					
+					var chartStyles = new Array ("analog", "digital", "horizon", "scatter");
+					
+					chartStyles.forEach(function (element, chartIndex) {
+						
+						var visibility = (chartIndex 
+											? "hidden" 
+											: "visible");
+						var cssClass = (chartIndex 
+											?  "additionOptions additionOptions_" + index 
+											: "selected_option");
+						var id = (chartIndex 
+											? "additional_options_" + index + "_" + chartIndex
+											: "selected_option_" + index);
+						var width = (chartIndex
+											? "200"
+											: "150");
+						
+						container.append("text").text(element)
+									.attr("x", ((width * chartIndex) + 505) + "")
+									.attr("y", "35")
+									.attr("stroke", "black")
+									.attr("fill", "black")
+									.style("font-family", "Times New Roman")
+									.style("font-size", "24pt")
+									.attr("class", cssClass)
+									.attr("id", id)
+									.attr("visibility",  visibility)
+									.attr("width", width)
+									.attr("height", "40")
+									.datum(index)
+									.on("mouseover", onDropDown)
+									.on("click", onOptionSelected);
+
+						return;
+					});
+	
+
+					return;
+				}; 
+
+
+				var dataSets = new Array("Connected Components", 
+											"Density", 
+											"Average Clustering Coefficient", 
+											"Assortativity",
+											"Us",
+											"Them");
+
+				
+				dataSets.forEach(generateCheckedOptionControl);
+				
+				var container = d3.select("#options").insert("rect", ":first-child")
+											.attr("x", "0")
+											.attr("y", "0")
+											.attr("width", "700")
+											.attr("height", (50 * dataSets.length) + "")
+											.attr("fill", "white")
+											.attr("stroke", "black")
+											.attr("stroke-width", "1");
+				return;
+			});
+		</script>
+	</body>
+</html>

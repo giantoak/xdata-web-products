@@ -69,7 +69,11 @@ function loadDigitalChart() {
 				var containerPrefix = null;
 				var layoutConfiguration = null;
 				var height = 100;
-				var xValue = function (d) { return (new Date(d[0])).getTime(); };
+				var xValue = function (d) { 
+									var results = (new Date(d[0])).getTime();
+									console.log("DigitalChart::xValue returning: " + results);
+									return  results;
+								};
 				var yValue = function (d) { return d[1]; };
 				var xScale = null;
 				var yScale = d3.scale.linear().domain(new Array(0, 1));
@@ -79,12 +83,18 @@ function loadDigitalChart() {
 				
 				function X(d) {
 					
-					return xScale(xValue(d));
+					var value = (new Date(xValue(d))).getTime();
+					var results = xScale(value);
+					
+					return results;
 				}
 				
 				function Y(d) {
 					
-					return yScale(yValue(d));
+					var value = yValue(d);
+					var results = yScale(value);
+					
+					return results;
 				}
 				
 				var idProperty = function idProperty(value) {
@@ -174,8 +184,11 @@ function loadDigitalChart() {
 				
 			function handleUninitialized(g, d, data, channel, i, txHeight, yHeight) {
 				
+				g.selectAll("*").remove();
+				
 				g.append("path")
 					.attr("class", "path di_" + channel)
+					.attr("fill", "none")
 					.attr("d", line(data))
 					.attr("clip-path", "url(" + GoUtilities.GenerateIdentifierSelector(
 							GoUtilities.GenerateComponentSpecificIdentifiers(containerPrefix, "chart")) + ")")
@@ -200,20 +213,26 @@ function loadDigitalChart() {
 						if ("digital" === d.type) {
 						
 							var g = d3.select(this)
-										.attr("id", d.id);
+										.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, d.id));
 							var chartConfig = this.__chart__;						
 							var noChannels = 0;
 							var diGroups = {};
 							d.data.forEach(function (element) {
 								
-								if (!(diGroups[element.Channel])) {
+								d.yVal.forEach(function (property) {
 									
-									diGroups[element.Channel] = new Array();
+									if (!(diGroups[property])) {
+										
+										diGroups[property] = new Array();
+										
+										++noChannels;
+									}
 									
-									++noChannels;
-								}
-								
-								diGroups[element.Channel].push(element);
+									diGroups[property].push(element);
+									return;
+								});
+
+								return;
 							});
 							
 							var gh = height;
@@ -225,7 +244,8 @@ function loadDigitalChart() {
 	
 								if (chartConfig) {
 									
-									if (chartConfig[d.id]) {
+									if (chartConfig[d.id]
+											&& !d.updated) {
 										
 										g.select(".path.di_" + channel)
 										.transition().duration(layoutConfiguration.graphRegion.duration)
@@ -262,6 +282,7 @@ function loadDigitalChart() {
 							}
 															
 							this.__chart__[d.id] = { update: true };
+							d.updated = false;
 							
 						}
 					});
