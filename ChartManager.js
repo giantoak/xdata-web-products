@@ -110,7 +110,7 @@ function loadChartManager() {
 					console.log(d);
 					console.log(instanceData[owner].graphs);
 					
-					instanceData[owner].dataSet = d;
+					instanceData[owner].dataSet = d.slice(0);
 					
 					if (instanceData[owner].graphs.length) {
 						
@@ -121,7 +121,7 @@ function loadChartManager() {
 						
 						dups.forEach(function (graph) {
 							
-								graph.data = d;
+								graph.data = d.slice(0);
 								graph.updated = true;
 
 								addGraph(owner, graph);
@@ -290,11 +290,15 @@ function loadChartManager() {
 						
 						var mX = mouse[0] + instanceData[owner].layoutConfiguration.margins.left;
 						var mY = mouse[1] + instanceData[owner].layoutConfiguration.margins.top;
+						var maxX = (instanceData[owner].layoutConfiguration.containerProperties.left 
+								+ instanceData[owner].layoutConfiguration.graphRegion.width
+								+ instanceData[owner].layoutConfiguration.checkListProperties.containerProperties.width);
+			
+
 						
 						if ((mX > instanceData[owner].layoutConfiguration.containerProperties.left)
 								&& (mY > 0)
-									&& (mX < ( instanceData[owner].layoutConfiguration.containerProperties.left 
-													+ instanceData[owner].layoutConfiguration.graphRegion.width))) {
+									&& (mX < maxX)) {
 							
 							instanceData[owner].hoverLine.attr("opacity", instanceData[owner].layoutConfiguration.graphRegion.hoverLine.displayedOpacity);
 							
@@ -368,7 +372,8 @@ function loadChartManager() {
 						var mX = mouse[0];
 						var mY = mouse[1];
 						var maxX = (instanceData[owner].layoutConfiguration.containerProperties.left 
-											+ instanceData[owner].layoutConfiguration.graphRegion.width);
+											+ instanceData[owner].layoutConfiguration.graphRegion.width
+											+ instanceData[owner].layoutConfiguration.checkListProperties.containerProperties.width);
 						
 						instanceData[owner].hoverLine.attr("x1", mX).attr("x2", mX);
 						
@@ -652,14 +657,20 @@ function loadChartManager() {
 														.style("background-color", instanceProperties.layoutConfiguration.containerProperties.backgroundColor);
 					
 					instanceProperties.svg = controlContainer.append("svg")
+//											.datum(instanceProperties.layoutConfiguration.iterationId)
 											.attr("height", instanceProperties.elementHeight)
 											.attr("width", instanceProperties.elementWidth);
 					
 					
-					instanceProperties.svg.append("defs").append("clipPath")
+					instanceProperties.svg.append("defs")
+										.datum(instanceProperties.layoutConfiguration.iterationId)
+									.append("clipPath")
 										.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "clip"))
 									.append("rect")
-										.attr("width", instanceProperties.layoutConfiguration.graphRegion.width) 
+										.attr("x", "0")
+										.attr("y", "0")
+										.attr("width", (instanceProperties.layoutConfiguration.containerProperties.left 
+															+ instanceProperties.layoutConfiguration.graphRegion.width)) 
 										.attr("height", instanceProperties.layoutConfiguration.graphRegion.height);
 								
 					instanceProperties.chartCanvas = instanceProperties.svg.append("g")
@@ -669,6 +680,14 @@ function loadChartManager() {
 														+ instanceProperties.layoutConfiguration.margins.top 
 														+ ")");
 					
+					instanceProperties.timeLegend = instanceProperties.chartCanvas.append("text")
+															.attr("class", "legend_time")
+															.attr("x",  ((instanceProperties.layoutConfiguration.margins.verticalMargins * 2)
+																			+ instanceProperties.layoutConfiguration.checkListProperties.containerProperties.width))
+															.attr("y", instanceProperties.layoutConfiguration.graphRegion.legendOffset)
+															.attr("text-anchor", instanceProperties.layoutConfiguration.graphRegion.textAnchor)
+															.text("time:");
+										
 					instanceProperties.xScale = d3.time.scale()
 													.range(new Array(0,
 															(instanceProperties.layoutConfiguration.containerProperties.left 
@@ -690,22 +709,13 @@ function loadChartManager() {
 															+ instanceProperties.layoutConfiguration.graphRegion.xAxisXTranslate()
 															+ ", "
 															+ (instanceProperties.layoutConfiguration.margins.top * 1.5) 
-															+ ")")
-									.attr("class", "brush");
+															+ ")");
 					
 					instanceProperties.chartCanvas.select(GoUtilities.GenerateIdentifierSelector(
 											GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "xAxis")))
 							.append("g")
 								.attr("class", GoUtilities.GenerateComponentSpecificIdentifiers(instanceProperties.prefix, "xAxis"));
 					
-					instanceProperties.timeLegend = instanceProperties.chartCanvas.append("text")
-											.attr("class", "legend_time")
-											.attr("x",  (instanceProperties.layoutConfiguration.graphRegion.width 
-															+ instanceProperties.layoutConfiguration.margins.verticalMargins))
-											.attr("y", instanceProperties.layoutConfiguration.graphRegion.legendOffset)
-											.attr("text-anchor", instanceProperties.layoutConfiguration.graphRegion.textAnchor)
-											.text("time:");
-
 					instanceProperties.svg.on("mouseover", chartMouseHoverHandler)
 							.on("mouseout", chartMouseOutHandler)
 							.on("mousemove", chartMouseMoveHandler)
@@ -818,8 +828,10 @@ function loadChartManager() {
 									return { date: element.date }; 
 								});
 					
-					d3.range((instanceData[owner].layoutConfiguration.containerProperties.left 
-									+ instanceData[owner].layoutConfiguration.graphRegion.width)).forEach(function(px) {
+					var maxWidth = instanceData[owner].layoutConfiguration.graphRegion.width; 
+//					var maxWidth = (instanceData[owner].layoutConfiguration.containerProperties.left 
+//							+ instanceData[owner].layoutConfiguration.graphRegion.width); 
+					d3.range(0, maxWidth).forEach(function(px) {
 						
 						var dt = scaling.invert(px);
 						var foundIndex = (GoUtilities.FindSortedInsertionPointWithKey(
@@ -833,13 +845,21 @@ function loadChartManager() {
 								var left = data[dataIndex - 1].date;
 								var right = data[dataIndex].date;
 								
-								if ((dt-left) < (right-dt)) {
+								var leftDelta = Math.abs(dt-left);
+								var rightDelta = Math.abs(dt-right);
+								
+								if (leftDelta < rightDelta) {
 									
 									--dataIndex;
 								}
 							}
 							
-							map.push({x: data[dataIndex].date, idx: dataIndex});
+							var mapping = {
+												x: data[dataIndex].date, 
+												idx: dataIndex
+											};
+							
+							map.push(mapping);
 						}
 						
 						cursorIndex = dataIndex;
@@ -899,32 +919,32 @@ function loadChartManager() {
 						graph.map = getLookupMap(owner, graph, instanceData[owner].xScale);
 					}
 					
-
-					var zoomScale = d3.time.scale()
-										.range([0, instanceData[owner].elementWidth])
-										.domain(instanceData[owner].xScale.domain());
-					instanceData[owner].brush = d3.svg.brush()
-									.x(zoomScale)
-									.on('brushend', function () {
-										
-										instanceData[owner].xScale.domain(instanceData[owner].brush.empty() 
-																			? xDomain 
-																				: instanceData[owner].brush.extent());
-										
-										zoomAsynchronously(function () {
-											
-											render(owner);
-											return;
-										});
-									});
-					
-					d3.select(GoUtilities.GenerateIdentifierSelector(
-									GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, "xAxis")))
-										.call(instanceData[owner].brush)
-										.selectAll("rect")
-										.attr("y", -10)
-										.attr("height", 20);
-					
+//					Subrange Selector provides brushing & Zooming functionality
+//					var zoomScale = d3.time.scale()
+//										.range([0, instanceData[owner].elementWidth])
+//										.domain(instanceData[owner].xScale.domain());
+//					instanceData[owner].brush = d3.svg.brush()
+//									.x(zoomScale)
+//									.on('brushend', function () {
+//										
+//										instanceData[owner].xScale.domain(instanceData[owner].brush.empty() 
+//																			? xDomain 
+//																				: instanceData[owner].brush.extent());
+//										
+//										zoomAsynchronously(function () {
+//											
+//											render(owner);
+//											return;
+//										});
+//									});
+//					
+//					d3.select(GoUtilities.GenerateIdentifierSelector(
+//									GoUtilities.GenerateComponentSpecificIdentifiers(instanceData[owner].prefix, "xAxis")))
+//										.call(instanceData[owner].brush)
+//										.selectAll("rect")
+//										.attr("y", -10)
+//										.attr("height", 20);
+//					
 					adjustChartHeight(owner);
 					
 					if (graph.render) {
@@ -1182,7 +1202,7 @@ function loadChartManager() {
 															diChartHeight: 20,
 															color: d3.scale.category10(),
 															timeLegend: null,
-															brush: null,
+//															brush: null,
 															dataSet: null,
 															chartClickedEventManagement: new GoAbstractControls.EventHandlerManagement()
 														};
