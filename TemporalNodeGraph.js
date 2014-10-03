@@ -508,20 +508,19 @@ function loadTemporalNodeGraph() {
 				var selector = GoUtilities.GenerateIdentifierSelector(
 									GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "temporalnodegraph_ui"));
 				
-				d3.select(selector).selectAll("*").remove();
+				svg.selectAll(".link").remove();
 				
 				link = svg.selectAll(".link").data(loadedData.links, function (d) {
 									return d.source.id + ":" + d.target.id;
 								});
 
-				// Won't occur as the contailer has been emptied prior 
-//				link.attr("class", "link")
-////						.attr("id", function (d) {
-////							
-////								return d.source.id + "_" + d.target.id;
-////							})
-//						.on("mouseover", linkMouseOver)
-//						.on("mouseout", linkMouseOut);
+				link.attr("class", "link")
+//						.attr("id", function (d) {
+//							
+//								return d.source.id + "_" + d.target.id;
+//							})
+						.on("mouseover", linkMouseOver)
+						.on("mouseout", linkMouseOut);
 				
 				// Ensure that the added line elements are placed before node elements
 				// so that the render under the nodes visually.  This is required to 
@@ -535,32 +534,32 @@ function loadTemporalNodeGraph() {
 									.on("mouseover", linkMouseOver)
 									.on("mouseout", linkMouseOut);
 				
-				// Won't occur as the contailer has been emptied prior 
-//				link.exit().remove();
+				link.exit().remove();
 	
+				svg.selectAll(".nodeContainer").remove();
+				
 				var workingSet = svg.selectAll(".nodeContainer").data(loadedData.nodes, function (d) {
 						
 										return d.id;
 									});						
 				
-				// Won't occur as the contailer has been emptied prior 
-//				workingSet.attr("class", function (d) {
-//								
-//								var results = "node";
-//								
-//								if (d.fixed) {
-//									
-//									results += " fixed";
-//								}
-//								
-//								return results;										
-//							})
-//						.on("dblclick", handleDoubleClick)
-//						.on("mouseover", nodeMouseOver)
-//						.on("mouseout", nodeMouseOut)
-//						.on("click", handleClick)
-//						.call(drag);
-//	
+				workingSet.attr("class", function (d) {
+								
+								var results = "node";
+								
+								if (d.fixed) {
+									
+									results += " fixed";
+								}
+								
+								return results;										
+							})
+						.on("dblclick", handleDoubleClick)
+						.on("mouseover", nodeMouseOver)
+						.on("mouseout", nodeMouseOut)
+						.on("click", handleClick)
+						.call(drag);
+	
 				workingSet.enter()
 						.append("g")
 							.attr("class", "nodeContainer")
@@ -590,8 +589,7 @@ function loadTemporalNodeGraph() {
 							.on("click", handleClick)
 							.call(drag);
 
-				// Won't occur as the contailer has been emptied prior 
-//				workingSet.exit().remove();
+				workingSet.exit().remove();
 				
 				var layout = new Array("circle", "circle");
 				var layoutClasses = new Array("userSelection", "userStatistics");
@@ -853,8 +851,17 @@ function loadTemporalNodeGraph() {
 								.attr("width", elementWidth)
 								.style("top", (layoutConfiguration.margins.top 
 													+ offsetHeight) + "px")
-								.call(d3.behavior.zoom().on("zoom", redraw))
-							.append("g")
+								.call(d3.behavior.zoom().on("zoom", redraw));
+				
+				svg.append("defs").datum(layoutConfiguration.iterationId)
+									.append("clipPath")
+										.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, "clip"))
+									.append("rect")
+										.attr("width", layoutConfiguration.containerProperties.width) 
+										.attr("height", layoutConfiguration.containerProperties.height);
+
+				
+				svg.append("g")
 								.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 																	"temporalnodegraph_ui"));
 				
@@ -975,6 +982,13 @@ function loadTemporalNodeGraph() {
 												"temporalnodegraph_linkDisplay"))
 											.attr("class", "temporalNodeGraphDataDisplay");
 				
+				layoutConfiguration.linkToolTipProperties.forEach(function propertyMapper(attribute) {
+					
+					linkDataDisplay.style(attribute.name, attribute.value);
+					
+					return;
+				});
+				
 				nodeDataDisplay = controlContainer.append("div")
 											.style("position", "absolute")
 											.style("top", (offsetHeight + layoutConfiguration.containerProperties.padding) + "px")
@@ -983,6 +997,13 @@ function loadTemporalNodeGraph() {
 											.attr("id", GoUtilities.GenerateComponentSpecificIdentifiers(prefix, 
 												"temporalnodegraph_nodeDisplay"))
 											.attr("class", "temporalNodeGraphDataDisplay");
+				
+				layoutConfiguration.nodeToolTipProperties.forEach(function propertyMapper(attribute) {
+					
+					nodeDataDisplay.style(attribute.name, attribute.value);
+					
+					return;
+				});
 							
 				var scrubberWidth = (((layoutConfiguration.scrubberProperties.width + 2) * 2) 
 										+ ((layoutConfiguration.scrubberProperties.padding 

@@ -109,7 +109,7 @@ function loadCheckListwithComboBox() {
 					var owner = GoUtilities.FindInstanceData(GoUtilities.GenerateIdentifierSelector(id));
 					var idSelector = GoUtilities.GenerateIdentifierSelector(
 							GoUtilities.GenerateComponentSpecificIdentifiers(
-									instanceData[prefix].prefix, ("option_title_" + datum)));
+									instanceData[owner].prefix, ("option_title_" + datum)));
 					var selected = d3.select(idSelector).text();
 					
 					if (instanceData[owner].selectedCharts[selected]) {
@@ -231,7 +231,7 @@ function loadCheckListwithComboBox() {
 					
 					var titleSelector = GoUtilities.GenerateIdentifierSelector(
 							GoUtilities.GenerateComponentSpecificIdentifiers(
-									instanceData[prefix].prefix, ("option_title_" + datum)));
+									instanceData[owner].prefix, ("option_title_" + datum)));
 					var selectedGraph = d3.select(titleSelector).text();
 
 					

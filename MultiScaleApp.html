@@ -34,6 +34,13 @@
 				style="position: absolute;
 						top: 300px; left: 10px; 
 						width: 2320px; height: 1000px; ">
+						
+			<div id="NodeGraphToolTip" 
+					style="position: absolute;
+							display: none;
+							opacity: 0.75;
+							border: 1px solid black;
+							background-color: beige;"></div>
 		</div>
 	
 	
@@ -138,6 +145,49 @@
 				};
 				
 				var tngLayout = {
+						iterationId: -1,
+						linkToolTipProperties: new Array(
+												{
+													name: "border", 
+													value: "2px solid black"
+												}, 
+												{
+													name: "border-radius",
+													value: "5px"
+												},
+												{
+													name: "box-shadow",
+													value: "10px 10px 5px darkgray"
+												},
+												{
+													name: "opacity",
+													value: "0.75"
+												},
+												{
+													name: "background-color",
+													value: "beige"
+												}),
+						nodeToolTipProperties: new Array(
+								{
+									name: "border", 
+									value: "2px solid green"
+								}, 
+								{
+									name: "border-radius",
+									value: "5px"
+								},
+								{
+									name: "box-shadow",
+									value: "10px 10px 5px darkslategray"
+								},
+								{
+									name: "opacity",
+									value: "0.75"
+								},
+								{
+									name: "background-color",
+									value: "lemonchiffon"
+								}),
 						containerProperties: {
 							top: 50,
 							left: 720,
@@ -165,7 +215,7 @@
 					graphProperties: {
 							transitionTiming: 1500,
 							charge: -400,
-							linkDistance: 40,
+							linkDistance: 80,
 							nodeRadius: 18,
 							fixedColor: "lightgray",
 							baseNodeColor: "white",
@@ -200,6 +250,7 @@
 						}
 				};
 				var cmLayout = {
+						iterationId: -1,
 						checkListProperties: {
 							containerProperties: {
 										x: "0",
@@ -339,7 +390,7 @@
 							top: 20,
 							left: 720,
 							width: 1900,
-							height: 300,
+							height: 500,
 							borders: "none",
 							backgroundColor: "white",
 							padding: 5,
@@ -447,6 +498,53 @@
 				
 				var createdComponents = { count: 0 };
 				
+				function findTop() {
+					
+					var componentTop = {};
+					var maxHeight = 0;
+					var container = d3.select("#dynamicDisplayContainer");
+					var foundSVG = container.selectAll("defs"); 
+					foundSVG.each(function () {
+						
+						var subject = d3.select(this);
+						var datum = subject.datum() + "";
+						
+						subject = d3.select(subject.node().parentNode);
+						var h = subject.attr("height");
+						var height = parseInt(h, 10);
+						
+						// Determine the Maximum Height of between the Chart or Node Component
+						if (componentTop[datum]) {
+						
+							if (componentTop[datum] < height) {
+								
+								componentTop[datum] = height;
+							}
+						} else {
+							
+							componentTop[datum] = height;
+						}
+					});
+					
+					// Determine the Maximum Height between all the subranges
+					for (var property in componentTop) {
+						
+						if (componentTop.hasOwnProperty(property)) {
+						
+							var height = (componentTop[property] ? componentTop[property] : 0);
+							
+							if (maxHeight < height) {
+								
+								maxHeight = height;
+							}
+ 						}						
+					};
+					
+					console.log("MultiScaleApp::findTop determined next to be a : " + maxHeight);
+					
+					return maxHeight; 
+				}
+				
 				var updateDisplay = function (data) {
 					
 					var startOffset = Math.floor(data.startOffset);
@@ -484,7 +582,15 @@
 								createdComponents[data.id]["addedControlIds"] = { cmId: cmControlPrefix, tngId: tngControlPrefix };
 
 								var temporalComponentsContainer = "temporalcontainer_" + createdComponents[data.id].idSuffix;
-								var topOffset = createdComponents[data.id].idSuffix * 675;  
+								
+								var maxChildHeight = findTop();
+// 								var maxChildHeight = ((cmLayout.containerProperties.height < tngLayout.containerProperties.height)
+// 																? tngLayout.containerProperties.height 
+// 																		: cmLayout.containerProperties.height);
+								var maxChildMargins = 300;
+								var topOffset = createdComponents[data.id].idSuffix * (maxChildHeight + maxChildMargins);
+								
+								console.log("MultiScaleApp::updateDisplay::json-callback: topOffset: " + topOffset)
 								
 								var tcc = d3.select("#dynamicDisplayContainer").append("div")
 													.attr("id", temporalComponentsContainer)
@@ -520,6 +626,8 @@
 								console.log(d3.select(cmContainer));
 								
 								cmLayout["subrangeSelector"] = subrangeSelectorControl;
+								cmLayout.iterationId = createdComponents[data.id].idSuffix;
+								tngLayout.iterationId = createdComponents[data.id].idSuffix;
 								
 								addedControls["cm"] = new cm(cmControlPrefix, cmContainer, cmLayout);
 								
@@ -602,6 +710,60 @@
 								addedControls["tng"].AdditionalNodeDataURL = tngLayout.additionalDataHandling.dataUrl;
 										
 								addedControls["tng"].AdditionalNodeDataMapper = tngLayout.additionalDataHandling.dataMapper;
+																
+								addedControls["tng"].AddLinkToolTipActivatedEventHandler(function hoverLink(ctr, display, data) {
+									
+									console.log("MultiScaleApp::hoverLink called...");
+									
+									display.style("display", "block")
+											.style("width", "300px")
+											.style("height", "100px")
+											.html("<table><tbody><tr><th>Source: </th><td>" 
+													+ data.source.name
+													+ "</td></tr><tr><th>Sink: </th><td>"
+													+ data.target.name
+													+ "</td></tr></tbody></table>");
+									
+									return;
+								});
+
+								addedControls["tng"].AddLinkToolTipDeactivatedEventHandler(function leaveLink(ctr, display, data) {
+										
+										console.log("MultiScaleApp::leaveLink called...");
+										
+										display.style("display", "none");
+										
+										return;
+									});
+								
+								addedControls["tng"].AddNodeToolTipActivatedEventHandler(function hoverOverNode(ctr, display, data) {
+										
+										console.log("MultiScaleApp::hoverNode called...");
+
+										display.style("display", "block")
+														.style("width", "200px")
+														.style("height", "100px")
+														.html("<table><tbody><tr><th>Name: </th><td>" 
+																+ data.name
+																+ "</td></tr><tr><th>Id: </th><td>"
+																+ data.id
+																+ "</td></tr></tbody></table>");
+
+										return;
+
+									});
+								
+								addedControls["tng"].AddNodeToolTipDeactivatedEventHandler(function leaveNode(ctr, display, data) {
+										
+										
+										console.log("MultiScaleApp::leaveNode called...");
+										
+										display.style("display", "none");
+										
+										return;
+									});
+
+									
 																
 							} else {
 								
